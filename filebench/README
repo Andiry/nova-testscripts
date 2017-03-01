@@ -1,0 +1,6 @@
+git repo:
+github.com:filebench/filebench
+
+
+Usage:
+filebench -f test.f
