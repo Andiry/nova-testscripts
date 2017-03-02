@@ -1,0 +1,8 @@
+FxMark is a file system scalability benchmark. The paper is published in USENIX ATC '16.
+
+git repo:
+github.com:NVSL/fxmark
+
+
+Usage:
+./bin/run-fxmark.py
