@@ -1,0 +1,8 @@
+postmark emulates a mailserver. It is a metadata-intensive benchmark, like filebench/fileserver.
+
+git repo:
+github.com:NVSL/postmark
+
+
+Usage:
+postmark nova.conf
