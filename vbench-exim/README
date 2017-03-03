@@ -1,0 +1,83 @@
+== Requirements ==
+
+VBENCH is a fork of MOSBENCH but allows running benchmarks inside
+VM as well. Please look at README.MOSBENCH to make VBENCH work
+solely on host.
+
+Repository
+==========
+git@github.com:NVSL/vbench.git
+
+fxmark-apps branch
+
+
+Compile
+==========
+Build both exim and rocksdb by typing the following command:
+
+$ make all-exim
+$ make all-rocksdb
+
+After this, you have to configure config.py with the correct path for
+ROOT where you vbench folder resides,
+PERFBIN for the perf to work.
+Please configure CPU_STEP i.e. at what granularity you want to collect
+the results for rocksdb and exim like figure 1
+CPU_CNTS = totoal number of cores (usually without hyperthreads)
+CORES_PER_SOCKET = number of cores per socket without HT
+
+(https://github.com/sslab-gatech/vbench/blob/fxmark-apps/config.py#L14)
+
+ROOT = "~/bench/vm-scalability/bench"
+PERFBIN = os.path.join("/home/sanidhya/research/linux/tools/perf/perf")
+CPU_STEP = 10
+CPU_CNTS = 160
+CORES_PER_SOCKET = 10
+
+After this, I have modified mparts/util.py
+(https://github.com/sslab-gatech/vbench/blob/fxmark-apps/mparts/util.py#L20)
+which is similar to fxmark's run-fxmark.py code.
+
+Please carefully look at the following lines:
+https://github.com/sslab-gatech/vbench/blob/fxmark-apps/mparts/util.py#L34
+to appropriately choose the medium i.e ssd, hdd, etc.
+
+
+Run
+==========
+Before running you have to run the following command which is
+necessary as it will create multiple tmpfs partitions
+
+$ sudo ./mkmounts tmpfs-separate # sudo is mandatory
+
+If you run ./config.py -h , you will get tons of options and they have
+some help messages for each option.
+
+Now, if you want to run any particular filesystem, then specify the
+following command:
+
+$ ./config.py --fs-type=<filesystem> --medium=nvmm exim # rocksdb
+
+Once, you have run any of the code, you will get something like below
+on your screen after the experiment is successfully finished:
+
+Results in: sanity/incomplete/20161203-125229/benchmark-exim
+Stopping ResultPath... done
+All results in: sanity/20161203-125229
+
+
+You need the directory name from the last line: "All results in:
+<directory name>"  to  generate the graph like Figure 1.
+
+$ ./graph sanity/20161203-125229
+
+
+Note
+===========
+
+It appears vbench only builds on Ubuntu 14.04.
+
+Since kernel 4.10-rc1, there is scalability issues with exim. Root cause unknown.
+
+
+
