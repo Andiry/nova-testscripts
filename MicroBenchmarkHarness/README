@@ -1,0 +1,30 @@
+git repo : https://github.com/NVSL/MicroBenchmarkHarness
+
+Usage :
+Clone the repo and run make.
+
+Script Description
+
+1. make_data.sh
+Creates 16 files of size 2 GB in /mnt/ramdisk
+2. read_test.sh
+Runs the read tests in loop for different number of threads
+USAGE 
+bash read_test.sh <number_of_threads> <number of iterations>                
+Default is 16 threads, 5 iterations  
+3. write_test.sh
+Runs the write tests in loop for different number of threads
+USAGE 
+bash write_test.sh <number_of_threads> <number of iterations>                
+Default is 16 threads, 5 iterations 
+
+To run read tests :
+
+bash make_data.sh
+bash read_test.sh
+
+To run write tests :
+
+bash make_data.sh
+bash read_test.sh
+
