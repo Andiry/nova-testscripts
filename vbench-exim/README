@@ -79,5 +79,5 @@ It appears vbench only builds on Ubuntu 14.04.
 
 Since kernel 4.10-rc1, there is scalability issues with exim. Root cause unknown.
 
-
+Exim test will disable CPUs. Run with num_cpus hard-coded.
 
