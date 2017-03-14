@@ -31,8 +31,12 @@ For async mode, follow the following command :
  i.e. The load throughput is 944.2870632672333 ops/sec etc.
  
  Each line in the "results" file corresponds to the number of threads.
+  
+ After running "bash cmds.sh" you should see the file named "results" with 8 lines of 6 column each.
+ Each line corresponds to a different thread count.
+ Each column coresponds to the data label as shown above.
  
- To run the sync mode, just change the command from " bash async_cmds.sh"  to "bash sync_cmds.sh" in the script cmds.sh 
+ To run the sync mode, just change the command from "bash async_cmds.sh"  to "bash sync_cmds.sh" in the script cmds.sh 
  
  
  
