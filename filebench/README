@@ -4,3 +4,19 @@ github.com:filebench/filebench
 
 Usage:
 filebench -f test.f
+
+To run using runFileBench.py, run the following command :
+
+> python runFileBench.py
+
+This script runs all the filebench scripts and reports the final ops/sec from IO Summary.
+
+Example output :
+
+> python runFileBench.py 
+Running fileserver..
+Running varmail..
+Running webproxy..
+Running webserver..
+fileserver	varmail	webproxy	webserver	
+93456.802 	113191.429 	243167.045 	675009.070
