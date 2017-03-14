@@ -1,0 +1,45 @@
+These are some useful scripts for running mongoDB with YCSB.
+
+To setup YCSB :
+
+1. git clone the YCSB repo from here - https://github.com/brianfrankcooper/YCSB
+2. The mongodb directory has instructions of how to setup and use mongoDB with YCSB.
+
+For async mode, follow the following command :
+
+ > bash cmds.sh
+ 
+ This script does the follows :
+ 
+ 1. It runs the async mode for mongoDB with differet number of threads : from 1 t 64.
+ Thread counts used - 1 2 4 8 16 24 32 64
+ 2. The results from load and run phase are saved in files named asyncLoad and asyncRun respectively.
+ 3. It runs getNum.pl on asyncLoad and asyncRun to get the following results :
+ 
+ Load Throughput (in ops/sec) 
+ Run Throughput (in ops/sec)
+ Read AverageLatency  (in microseconds)
+ Read 99thPercentileLatency (in microseconds)
+ Update AverageLatency  (in microseconds)
+ Update 99thPercentileLatency (in microseconds)
+ 
+ These results are printed into the file named "results" in a single line as follows:
+ 
+ Example : 944.2870632672333	966.1835748792271	832.6686868686869	1141.0	751.9584158415842	1163.0
+ 
+ where each column corressponds to the data label shown above
+ i.e. The load throughput is 944.2870632672333 ops/sec etc.
+ 
+ Each line in the "results" file corresponds to the number of threads.
+  
+ After running "bash cmds.sh" you should see the file named "results" with 8 lines of 6 column each.
+ Each line corresponds to a different thread count.
+ Each column coresponds to the data label as shown above.
+ 
+ To run the sync mode, just change the command from "bash async_cmds.sh"  to "bash sync_cmds.sh" in the script cmds.sh 
+ 
+ 
+ 
+ 
+ 
+ 
