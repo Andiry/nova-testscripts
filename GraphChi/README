@@ -1,0 +1,13 @@
+GraphChi is a disk-based large-scale graph computation model.
+
+git repo:
+https://github.com/GraphChi/graphchi-cpp
+
+Input files:
+http://snap.stanford.edu/data/index.html
+
+Usage:
+./bin/example_apps/pagerank file GRAPH-NAME
+
+References:
+https://code.google.com/archive/p/graphchi/wikis/ExampleApps.wiki
