@@ -1,4 +1,5 @@
-postmark emulates a mailserver. It is a metadata-intensive benchmark, like filebench/fileserver.
+postmark emulates a mailserver.
+It is a metadata-intensive benchmark, like filebench/varmail.
 
 git repo:
 github.com:NVSL/postmark
