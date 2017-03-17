@@ -8,3 +8,15 @@ mysql-setup.sh: Setup script
 Sysbench test:
 # sysbench --test=oltp --oltp-table-size=10000000 --mysql-db=test --mysql-user=root --mysql-password=PASSWORD prepare
 # sysbench --test=oltp --oltp-table-size=1000000 --mysql-db=test --mysql-user=root --mysql-password=PASSWORD --num-threads=16 --max-time=60 --max-requests=0 run
+
+
+TPCC-mysql test:
+Git repo:
+https://github.com/Percona-Lab/tpcc-mysql
+
+Usage:
+mysqladmin create tpcc1000 -u root -p
+mysql tpcc1000 < create_table.sql -u root -p
+mysql tpcc1000 < add_fkey_idx.sql -u root -p
+./tpcc_load -h127.0.0.1 -d tpcc1000 -u root -p "" -w 100
+./tpcc_start -h127.0.0.1 -P3306 -dtpcc1000 -uroot -p "" -w100 -c32 -r10 -l10800
