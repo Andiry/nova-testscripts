@@ -47,7 +47,7 @@ void parse_cmd(struct option_t *o, char *s) {
 
 static void parse_options(option_t &o, int argc, char *argv[]) {
     // TODO: really parse arguments to form options
-    option_t option;
+//    option_t option;
 //    for (unsigned int i = 1; i < argc; i++)
 //        parse_cmd(&option, argv[i]);
 
@@ -56,10 +56,10 @@ static void parse_options(option_t &o, int argc, char *argv[]) {
     o.key_size   = KEY_SIZE;
     o.value_size = VALUE_SIZE;
 
-    std::cout << "iterations: " << option.iterations << std::endl;
-    std::cout << "num keys:   " << option.num_keys << std::endl;
-    std::cout << "key size:   " << option.key_size << std::endl;
-    std::cout << "value size: " << option.value_size << std::endl;
+    std::cout << "iterations: " << o.iterations << std::endl;
+    std::cout << "num keys:   " << o.num_keys << std::endl;
+    std::cout << "key size:   " << o.key_size << std::endl;
+    std::cout << "value size: " << o.value_size << std::endl;
     std::cout << std::endl;
 
     return;
