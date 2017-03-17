@@ -16,12 +16,13 @@
 #define VALUE_SIZE 1024
 
 struct option_t {
-    unsigned int iterations = ITERATIONS;
-    unsigned int num_keys   = NUM_KEYS;
-    unsigned int key_size   = KEY_SIZE;
-    unsigned int value_size = VALUE_SIZE;
+    unsigned int iterations;
+    unsigned int num_keys;
+    unsigned int key_size;
+    unsigned int value_size;
 };
 
+#if 0
 void parse_cmd(struct option_t *o, char *s) {
     std::string iterations("--iterations=");
     std::string num_keys("--num-keys=");
@@ -42,21 +43,26 @@ void parse_cmd(struct option_t *o, char *s) {
         exit(-1);
     }
 }
+#endif
 
-option_t parse_options(int argc, char *argv[]) {
+static void parse_options(option_t &o, int argc, char *argv[]) {
     // TODO: really parse arguments to form options
     option_t option;
-    for (unsigned int i = 1; i < argc; i++)
-        parse_cmd(&option, argv[i]);
+//    for (unsigned int i = 1; i < argc; i++)
+//        parse_cmd(&option, argv[i]);
 
-#if 1
+    o.iterations = ITERATIONS;
+    o.num_keys   = NUM_KEYS;
+    o.key_size   = KEY_SIZE;
+    o.value_size = VALUE_SIZE;
+
     std::cout << "iterations: " << option.iterations << std::endl;
     std::cout << "num keys:   " << option.num_keys << std::endl;
     std::cout << "key size:   " << option.key_size << std::endl;
     std::cout << "value size: " << option.value_size << std::endl;
     std::cout << std::endl;
-#endif
-    return option;
+
+    return;
 }
 
 
@@ -115,7 +121,8 @@ void tokyocabinet_bench(TCHDB *hdb, option_t *o) {
 
 int main(int argc, char *argv[])
 {
-    option_t o = parse_options(argc, argv);
+    option_t o;
+    parse_options(o, argc, argv);
 
     TCHDB *hdb = tokyocabinet_setup();
 
