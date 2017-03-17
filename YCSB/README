@@ -41,5 +41,14 @@ For async mode, follow the following command :
  
  
  
- 
+On pm-dev5:
+
+Start MongoDB:
+# cd /path/to/MongoDB/
+# numactl --interleave=all ./bin/mongod
+
+Run YCSB:
+# cd /path/to/YCSB/
+# ./bin/ycsb load mongodb -s -P workloads-mongodb/workloada -threads 16
+# ./bin/ycsb run mongodb -s -P workloads-mongodb/workloada -threads 16
  
