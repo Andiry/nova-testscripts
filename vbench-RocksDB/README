@@ -21,5 +21,9 @@ $ make all-rocksdb
 
 Run
 ==========
-./rocksdb/db_bench --benchmarks overwrite --db /mnt/ramdisk/0 --duration 40 --disable_wal false --disable_data_sync false --compression_type none --compression_level 0 --threads 2 --max_background_compactions 8 --max_background_flushes 8 --value_size 8192
+./rocksdb/db_bench --benchmarks overwrite --db /mnt/ramdisk/0 --duration 40 --disable_wal false --disable_data_sync false --compression_type none --compression_level 0 --threads 8 --max_background_compactions 8 --max_background_flushes 8 --value_size 8192
+
+./rocksdb/db_bench --benchmarks appendrandom --db /mnt/ramdisk/0 --duration 40 --disable_wal false --disable_data_sync false --compression_type none --compression_level 0 --threads 8 --max_background_compactions 8 --max_background_flushes 8 --value_size 8192
+
+./rocksdb/db_bench --benchmarks readrandomwriterandom --db /mnt/ramdisk/0 --duration 40 --disable_wal false --disable_data_sync false --compression_type none --compression_level 0 --threads 8 --max_background_compactions 8 --max_background_flushes 8 --value_size 8192
 
