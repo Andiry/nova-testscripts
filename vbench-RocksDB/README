@@ -1,0 +1,25 @@
+== Requirements ==
+
+VBENCH is a fork of MOSBENCH but allows running benchmarks inside
+VM as well. Please look at README.MOSBENCH to make VBENCH work
+solely on host.
+
+Repository
+==========
+git@github.com:NVSL/vbench.git
+
+fxmark-apps branch
+
+
+Compile
+==========
+Build both exim and rocksdb by typing the following command:
+
+$ make all-rocksdb
+
+
+
+Run
+==========
+./rocksdb/db_bench --benchmarks overwrite --db /mnt/ramdisk/0 --duration 40 --disable_wal false --disable_data_sync false --compression_type none --compression_level 0 --threads 2 --max_background_compactions 8 --max_background_flushes 8 --value_size 8192
+
