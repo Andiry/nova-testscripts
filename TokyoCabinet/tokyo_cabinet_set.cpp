@@ -10,8 +10,8 @@
 
 #include "timer.h"
 
-#define ITERATIONS 1
-#define NUM_KEYS 100000
+#define ITERATIONS 3
+#define NUM_KEYS 1000000
 #define KEY_SIZE 8
 #define VALUE_SIZE 1024
 

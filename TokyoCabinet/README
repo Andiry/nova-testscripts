@@ -7,5 +7,5 @@ Install:
 Usage:
 # cp tokyo_cabinet_set /mnt/ramdisk/
 # cd /mnt/ramdisk
-# ./tokyo_cabinet_set --iterations=1 --num-keys=100000 --value-size=1024
+# ./tokyo_cabinet_set
 
