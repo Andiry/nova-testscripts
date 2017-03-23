@@ -33,9 +33,9 @@ set $iosize=1m
 
 define fileset name=bigfileset,path=$dir,size=$meanfilesize,entries=$nfiles,dirwidth=$meandirwidth,prealloc=80
 
-define process name=proxycache,instances=$nthreads
+define process name=proxycache,instances=1
 {
-  thread name=proxycache,memsize=10m,instances=1
+  thread name=proxycache,memsize=10m,instances=$nthreads
   {
     flowop deletefile name=deletefile1,filesetname=bigfileset
     flowop createfile name=createfile1,filesetname=bigfileset,fd=1
