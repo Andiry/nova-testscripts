@@ -13,26 +13,212 @@
 #define END_SIZE	(4UL * 1024 * 1024) 
 
 const int start_size = 512;
+const char *dir = "/mnt/ramdisk/file_";
+static unsigned long long count;
+
+static void create_files(int num_files)
+{
+	struct timespec start, end;
+	int file_count;
+	char filename[60];
+	long long time;
+	int fd;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	for (file_count = 0; file_count < num_files; file_count++) {
+		sprintf(filename, "%s%d", dir, file_count);
+		fd = open(filename, O_CREAT | O_RDWR, 0640);
+
+		close(fd);
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+	printf("create files: %d files, %lld nanoseconds, "
+		"per file latency %lld nanoseconds.\n",
+		num_files, time, time / num_files);
+}
+
+static void append_files(int num_files, const char *buf, int size)
+{
+	struct timespec start, end;
+	int file_count;
+	char filename[60];
+	long long time;
+	int fd, i;
+	size_t ret;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	for (file_count = 0; file_count < num_files; file_count++) {
+		sprintf(filename, "%s%d", dir, file_count);
+		fd = open(filename, O_RDWR, 0640);
+
+		lseek(fd, 0, SEEK_SET);
+		for (i = 0; i < count; i++) {
+			ret = write(fd, buf, size);
+			if (ret != size)
+				printf("ERROR: %s size incorrect: required %d, "
+					"returned %lu\n", filename, size, ret);
+		}
+
+		fsync(fd);
+		close(fd);
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+	if (count) {
+		printf("append files: %d files, %lld nanoseconds, "
+			"per file latency %lld nanoseconds, "
+			"per request latency %lld nanoseconds.\n",
+			num_files, time, time / num_files,
+			time / (num_files * count));
+	}
+}
+
+static void write_files(int num_files, const char *buf, int size)
+{
+	struct timespec start, end;
+	int file_count;
+	char filename[60];
+	long long time;
+	int fd, i;
+	size_t ret;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	for (file_count = 0; file_count < num_files; file_count++) {
+		sprintf(filename, "%s%d", dir, file_count);
+		fd = open(filename, O_RDWR, 0640);
+
+		lseek(fd, 0, SEEK_SET);
+		for (i = 0; i < count; i++) {
+			ret = write(fd, buf, size);
+			if (ret != size)
+				printf("ERROR: %s size incorrect: required %d, "
+					"returned %lu\n", filename, size, ret);
+		}
+
+		fsync(fd);
+		close(fd);
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+	if (count) {
+		printf("write files: %d files, %lld nanoseconds, "
+			"per file latency %lld nanoseconds, "
+			"per request latency %lld nanoseconds.\n",
+			num_files, time, time / num_files,
+			time / (num_files * count));
+	}
+}
+
+static void write_files_512(int num_files, const char *buf)
+{
+	struct timespec start, end;
+	int file_count;
+	char filename[60];
+	long long time;
+	int fd, i;
+	size_t ret;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	for (file_count = 0; file_count < num_files; file_count++) {
+		sprintf(filename, "%s%d", dir, file_count);
+		fd = open(filename, O_RDWR, 0640);
+
+		lseek(fd, 0, SEEK_SET);
+		for (i = 0; i < count; i++) {
+			ret = write(fd, buf, 512);
+			if (ret != 512)
+				printf("ERROR: %s size incorrect: required %d, "
+					"returned %lu\n", filename, 512, ret);
+		}
+
+		fsync(fd);
+		close(fd);
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+	if (count) {
+		printf("write files 512: %d files, %lld nanoseconds, "
+			"per file latency %lld nanoseconds, "
+			"per request latency %lld nanoseconds.\n",
+			num_files, time, time / num_files,
+			time / (num_files * count));
+	}
+}
+
+static void read_files(int num_files, char *buf, int size)
+{
+	struct timespec start, end;
+	int file_count;
+	char filename[60];
+	long long time;
+	int fd, i;
+	size_t ret;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	for (file_count = 0; file_count < num_files; file_count++) {
+		sprintf(filename, "%s%d", dir, file_count);
+		fd = open(filename, O_RDWR, 0640);
+
+		lseek(fd, 0, SEEK_SET);
+		for (i = 0; i < count; i++) {
+			ret = read(fd, buf, size);
+			if (ret != size)
+				printf("ERROR: %s size incorrect: required %d, "
+					"returned %lu\n", filename, size, ret);
+		}
+
+		close(fd);
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+	if (count) {
+		printf("read files: %d files, %lld nanoseconds, "
+			"per file latency %lld nanoseconds, "
+			"per request latency %lld nanoseconds.\n",
+			num_files, time, time / num_files,
+			time / (num_files * count));
+	}
+}
+
+static void delete_files(int num_files)
+{
+	struct timespec start, end;
+	int file_count;
+	char filename[60];
+	long long time;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	for (file_count = 0; file_count < num_files; file_count++) {
+		sprintf(filename, "%s%d", dir, file_count);
+		unlink(filename);
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
+	printf("delete files: %d files, %lld nanoseconds, "
+		"per file latency %lld nanoseconds.\n",
+		num_files, time, time / num_files);
+
+}
 
 int main(int argc, char **argv)
 {
-	int fd, i, file_count;
 	unsigned long long FILE_SIZE;
 	size_t len;
 	char c;
 	char unit;
 	int size;
-	size_t ret;
-	unsigned long long count;
 	void *buf1 = NULL;
 	char *buf, *buf2;
 	char file_size_num[20];
-	char filename[60];
-	char *dir = "/mnt/ramdisk/file_";
 	int req_size;
 	int num_files;
-	long long time;
-	struct timespec start, end;
 
 	if (argc < 4) {
 		printf("Usage: ./write_files $NUM_FILES $FILE_SIZE $REQ_SIZE\n");
@@ -85,58 +271,12 @@ int main(int argc, char **argv)
 	size = req_size;
 	count = FILE_SIZE / size;
 
-	clock_gettime(CLOCK_MONOTONIC, &start);
-	for (file_count = 0; file_count < num_files; file_count++) {
-		sprintf(filename, "%s%d", dir, file_count);
-		fd = open(filename, O_CREAT | O_RDWR, 0640);
-
-		close(fd);
-	}
-
-	clock_gettime(CLOCK_MONOTONIC, &end);
-	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
-	printf("create files: %d files, %lld nanoseconds, "
-		"per file latency %lld nanoseconds.\n",
-		num_files, time, time / num_files);
-
-	clock_gettime(CLOCK_MONOTONIC, &start);
-	for (file_count = 0; file_count < num_files; file_count++) {
-		sprintf(filename, "%s%d", dir, file_count);
-		fd = open(filename, O_RDWR, 0640);
-
-		lseek(fd, 0, SEEK_SET);
-		for (i = 0; i < count; i++) {
-			ret = write(fd, buf, size);
-			if (ret != size)
-				printf("ERROR: %s size incorrect: required %d, "
-					"returned %lu\n", filename, size, ret);
-		}
-
-		fsync(fd);
-		close(fd);
-	}
-
-	clock_gettime(CLOCK_MONOTONIC, &end);
-	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
-	if (count) {
-		printf("write files: %d files, %lld nanoseconds, "
-			"per file latency %lld nanoseconds, "
-			"per request latency %lld nanoseconds.\n",
-			num_files, time, time / num_files,
-			time / (num_files * count));
-	}
-
-	clock_gettime(CLOCK_MONOTONIC, &start);
-	for (file_count = 0; file_count < num_files; file_count++) {
-		sprintf(filename, "%s%d", dir, file_count);
-		fd = unlink(filename);
-	}
-
-	clock_gettime(CLOCK_MONOTONIC, &end);
-	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
-	printf("delete files: %d files, %lld nanoseconds, "
-		"per file latency %lld nanoseconds.\n",
-		num_files, time, time / num_files);
+	create_files(num_files);
+	append_files(num_files, buf, size);
+	write_files(num_files, buf, size);
+	write_files_512(num_files, buf);
+	read_files(num_files, buf, size);
+	delete_files(num_files);
 
 	free(buf1);
 	free(buf2);
