@@ -51,4 +51,6 @@ Run YCSB:
 # cd /path/to/YCSB/
 # ./bin/ycsb load mongodb -s -P workloads-mongodb/workloada -threads 16
 # ./bin/ycsb run mongodb -s -P workloads-mongodb/workloada -threads 16
- 
+
+Note:
+MongoDB uses write_iter. Disable it if testing write protection.
