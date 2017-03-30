@@ -1,0 +1,9 @@
+FIO is flexible I/O tester.
+
+Run FIO:
+
+Test random read bandwidth:
+# python run-read.py
+
+Test random write bandwidth:
+# python run-write.py

@@ -1,0 +1,16 @@
+[write]
+ioengine=sync
+blocksize=4K
+numjobs=2
+group_reporting
+filesize=1G
+runtime=30
+time_based
+fsync_on_close=1
+randrepeat=0
+rw=randrw
+rwmixread=100
+rwmixwrite=0
+
+directory=/mnt/ramdisk
+#filename=/mnt/ramdisk/test1
