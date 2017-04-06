@@ -45,7 +45,8 @@ On pm-dev5:
 
 Start MongoDB:
 # cd /path/to/MongoDB/
-# numactl --interleave=all ./bin/mongod
+# echo never > /sys/kernel/mm/transparent_hugepage/enabled
+# numactl --interleave=all ./bin/mongod  --dbpath=/mnt/ramdisk
 
 Run YCSB:
 # cd /path/to/YCSB/
