@@ -62,6 +62,7 @@ int main(int argc, char **argv)
 	unsigned long long count, new_count;
 	char file_size_num[20];
 	unsigned long long FILE_SIZE;
+	FILE *output;
 	char *buf;
 	int num_threads;
 	int fd;
@@ -69,6 +70,9 @@ int main(int argc, char **argv)
 	char *data;
 	char unit;
 	size_t ret;
+	time_t t = time(NULL);
+	struct tm *tm = localtime(&t);
+	char output_name[64];
 
 	if (argc < 4) {
 		printf("Usage: ./pthread_test_mmap $num_threads $FILE_SIZE $seconds\n");
@@ -115,6 +119,14 @@ int main(int argc, char **argv)
 	printf("# pthreads: %d, file size %llu, running for %d seconds\n",
 			num_threads, FILE_SIZE, seconds);
 
+	sprintf(output_name, "%d-%02d-%d-%d:%d:%d.csv",
+		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+		tm->tm_hour, tm->tm_min, tm->tm_sec);
+	printf("%s\n", output_name);
+
+	output = fopen(output_name, "a");
+	fprintf(output, "%s, %s\n", "Seconds", "Ops/s");
+
 	if (posix_memalign((void *)&buf, END_SIZE, END_SIZE)) // up to 64MB
 		return 0;
 
@@ -149,6 +161,7 @@ int main(int argc, char **argv)
 		for (i = 0; i < num_threads; i++)
 			new_count += pids[i].count;
 		printf("Second %d, count %llu\n", sec, new_count - count);
+		fprintf(output, "%d, %llu\n", sec, new_count - count);
 		count = new_count;
 		if (sec >= seconds)
 			break;
@@ -157,12 +170,16 @@ int main(int argc, char **argv)
 	printf("Finish.\n");
 	finish = 1;
 	close(fd);
+	fclose(output);
+
 	for (i = 0; i < num_threads; i++) {
 		pthread_join(pthreads[i], NULL);
 	}
+
 	free(buf);
 	free(pthreads);
 	free(pids);
 	munmap(data, FILE_SIZE);
+
 	return 0;
 }
