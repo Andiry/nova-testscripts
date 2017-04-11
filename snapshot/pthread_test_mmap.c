@@ -50,8 +50,10 @@ void *pthread_transfer(void *arg)
 			k = *(long *)(data + i * 8);
 			k++;
 			*(long *)(data + i * 8) = k;
+			if (i > 0 && ((i & 65535) == 0))
+				pdata->count += 65536;
 		}
-		pdata->count += count;
+		pdata->count += 65536;
 	}
 
 	pthread_exit(0);
