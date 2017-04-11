@@ -17,7 +17,6 @@
 
 #define END_SIZE	(4UL * 1024 * 1024) 
 
-const int start_size = 2048;
 unsigned long long FILE_SIZE;
 char *buf;
 int num_threads;
@@ -33,7 +32,7 @@ pthread_mutex_t	lock = PTHREAD_MUTEX_INITIALIZER;
 struct pthread_data {
 	int pid;
 	char *data;
-	int length;
+	unsigned long long length;
 	volatile long long count;
 };
 
@@ -41,10 +40,10 @@ void *pthread_transfer(void *arg)
 {
 	struct pthread_data *pdata = arg;
 	char *data = pdata->data;
-	int length = pdata->length;
+	unsigned long long length = pdata->length;
 	long k;
-	int count = length / 8;
-	int i;
+	unsigned long long count = length / 8;
+	unsigned long long i;
 
 	while(1) {
 		for (i = 0; i < count; i++) {
@@ -109,7 +108,7 @@ int main(int argc, char **argv)
 	if (FILE_SIZE < END_SIZE)
 		FILE_SIZE = END_SIZE;
 
-	printf("# pthreads: %d\n", num_threads);
+	printf("# pthreads: %d, file size %llu\n", num_threads, FILE_SIZE);
 
 	if (posix_memalign((void *)&buf, END_SIZE, END_SIZE)) // up to 64MB
 		return 0;
