@@ -17,17 +17,7 @@
 
 #define END_SIZE	(4UL * 1024 * 1024) 
 
-unsigned long long FILE_SIZE;
-char *buf;
-int num_threads;
-int fd;
-char *data;
-volatile int waiting_threads;
-volatile int finished_threads;
-volatile int size;
-pthread_cond_t	ready = PTHREAD_COND_INITIALIZER;
-pthread_cond_t	finish = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t	lock = PTHREAD_MUTEX_INITIALIZER;
+volatile int finish;
 
 struct pthread_data {
 	int pid;
@@ -54,6 +44,8 @@ void *pthread_transfer(void *arg)
 				pdata->count += 65536;
 		}
 		pdata->count += 65536;
+		if (finish)
+			break;
 	}
 
 	pthread_exit(0);
@@ -69,11 +61,17 @@ int main(int argc, char **argv)
 	size_t len;
 	unsigned long long count, new_count;
 	char file_size_num[20];
+	unsigned long long FILE_SIZE;
+	char *buf;
+	int num_threads;
+	int fd;
+	int seconds;
+	char *data;
 	char unit;
 	size_t ret;
 
-	if (argc < 3) {
-		printf("Usage: ./pthread_test_mmap $num_threads $FILE_SIZE\n");
+	if (argc < 4) {
+		printf("Usage: ./pthread_test_mmap $num_threads $FILE_SIZE $seconds\n");
 		return 0;
 	}
 
@@ -82,6 +80,10 @@ int main(int argc, char **argv)
 		printf("num threads %d? limit to 1\n", num_threads);
 		num_threads = 1;
 	}
+
+	seconds = atoi(argv[3]);
+	if (seconds <= 5)
+		seconds = 5;
 
 	strcpy(file_size_num, argv[2]);
 	len = strlen(file_size_num);
@@ -110,7 +112,8 @@ int main(int argc, char **argv)
 	if (FILE_SIZE < END_SIZE)
 		FILE_SIZE = END_SIZE;
 
-	printf("# pthreads: %d, file size %llu\n", num_threads, FILE_SIZE);
+	printf("# pthreads: %d, file size %llu, running for %d seconds\n",
+			num_threads, FILE_SIZE, seconds);
 
 	if (posix_memalign((void *)&buf, END_SIZE, END_SIZE)) // up to 64MB
 		return 0;
@@ -125,7 +128,7 @@ int main(int argc, char **argv)
 				"returned %lu\n", END_SIZE, ret);
 	}
 
-	data = (char *)mmap(NULL, FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	data = (char *)mmap(NULL, FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, fd, 0);
 
 	//Allocate the threads
 	pthreads = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
@@ -147,8 +150,12 @@ int main(int argc, char **argv)
 			new_count += pids[i].count;
 		printf("Second %d, count %llu\n", sec, new_count - count);
 		count = new_count;
+		if (sec >= seconds)
+			break;
 	}
 
+	printf("Finish.\n");
+	finish = 1;
 	close(fd);
 	for (i = 0; i < num_threads; i++) {
 		pthread_join(pthreads[i], NULL);
