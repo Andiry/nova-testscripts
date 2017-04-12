@@ -26,6 +26,7 @@ struct pthread_data {
 	unsigned long seed;
 	char *data;
 	unsigned long long length;
+	unsigned long range_size;
 	volatile long long count;
 };
 
@@ -35,10 +36,12 @@ void *pthread_transfer(void *arg)
 	struct pthread_data *pdata = arg;
 	int pid = pdata->pid;
 	char *data = pdata->data;
-	unsigned long long range = pdata->length / 8;
+	unsigned long range_size = pdata->range_size;
+	unsigned long num_range = pdata->length / range_size;
 	long k;
-	uint64_t pos;
-	int count = 0;
+	uint64_t range_id;
+	unsigned long pos;
+	int i;
 	cpu_set_t cpuset;
 
 	CPU_ZERO(&cpuset);
@@ -49,17 +52,16 @@ void *pthread_transfer(void *arg)
 			pid, pid % num_cpus);
 
 	while (1) {
-		pos = RandLFSR(&pdata->seed) & (range - 1);
-		k = *(long *)(data + pos * 8);
-		k++;
-		*(long *)(data + pos * 8) = k;
-		count++;
-		if (count > 0 && ((count & 65535) == 0)) {
-			pdata->count += 65536;
-			count = 0;
-			if (finish)
-				break;
+		range_id = RandLFSR(&pdata->seed) % num_range;
+		pos = range_id * range_size;
+		for (i = 0; i < range_size / 8; i++) {
+			k = *(long *)(data + pos + i * 8);
+			k++;
+			*(long *)(data + pos + i * 8) = k;
 		}
+		pdata->count += range_size / 8;
+		if (finish)
+			break;
 	}
 
 	pthread_exit(0);
@@ -164,6 +166,7 @@ int main(int argc, char **argv)
 		pids[i].pid = i;
 		pids[i].seed = i;
 		pids[i].length = FILE_SIZE;
+		pids[i].range_size = 16777216;
 		pids[i].data = data;
 		pids[i].count = 0;
 		pthread_create(pthreads + i, NULL, pthread_transfer, (void *)(pids + i)); 
