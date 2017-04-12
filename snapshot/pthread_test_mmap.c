@@ -52,7 +52,8 @@ void *pthread_transfer(void *arg)
 			pid, pid % num_cpus);
 
 	while (1) {
-		range_id = RandLFSR(&pdata->seed) % num_range;
+		range_id = RandLFSR(&pdata->seed) % (num_range / 2) +
+				RandLFSR(&pdata->seed) % (num_range / 2);
 		pos = range_id * range_size;
 		for (i = 0; i < range_size / 8; i++) {
 			k = *(long *)(data + pos + i * 8);
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
 	printf("%d cpus, %d pthreads, file size %llu, running for %d seconds\n",
 			num_cpus, num_threads, FILE_SIZE, seconds);
 
-	sprintf(output_name, "%d-%02d-%d-%d-%d-%d.csv",
+	sprintf(output_name, "%d-%02d-%02d-%02d-%02d-%02d.csv",
 		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 		tm->tm_hour, tm->tm_min, tm->tm_sec);
 	printf("%s\n", output_name);
