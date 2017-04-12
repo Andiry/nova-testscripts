@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 	int i;
 	int sec = 0;
 	size_t len;
-	unsigned long long count, new_count;
+	unsigned long long count;
 	char file_size_num[20];
 	unsigned long long FILE_SIZE;
 	FILE *output;
@@ -172,16 +172,28 @@ int main(int argc, char **argv)
 		pthread_create(pthreads + i, NULL, pthread_transfer, (void *)(pids + i)); 
 	}
 
-	count = 0;
+	printf("Sleeping for 15 seconds to get stable output");
+	fflush(stdout);
+	for (i = 0; i < 15; i++) {
+		sleep(1);
+		printf(".");
+		fflush(stdout);
+	}
+	printf("done.\n");
+
+	for (i = 0; i < num_threads; i++)
+		pids[i].count = 0;
+
 	while (1) {
 		sleep(1);
 		sec++;
-		new_count = 0;
-		for (i = 0; i < num_threads; i++)
-			new_count += pids[i].count;
-		printf("Second %d, count %llu\n", sec, new_count - count);
-		fprintf(output, "%d, %llu\n", sec, new_count - count);
-		count = new_count;
+		count = 0;
+		for (i = 0; i < num_threads; i++) {
+			count += pids[i].count;
+			pids[i].count = 0;
+		}
+		printf("Second %d, count %llu\n", sec, count);
+		fprintf(output, "%d, %llu\n", sec, count);
 		if (sec >= seconds)
 			break;
 	}
