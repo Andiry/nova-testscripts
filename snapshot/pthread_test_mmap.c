@@ -17,6 +17,7 @@
 
 #define END_SIZE	(4UL * 1024 * 1024) 
 
+int num_cpus;
 volatile int finish;
 
 struct pthread_data {
@@ -28,12 +29,22 @@ struct pthread_data {
 
 void *pthread_transfer(void *arg)
 {
+	pthread_t current_thread = pthread_self();
 	struct pthread_data *pdata = arg;
+	int pid = pdata->pid;
 	char *data = pdata->data;
 	unsigned long long length = pdata->length;
 	long k;
 	unsigned long long count = length / 8;
 	unsigned long long i;
+	cpu_set_t cpuset;
+
+	CPU_ZERO(&cpuset);
+	CPU_SET(pid % num_cpus, &cpuset);
+
+	pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
+	printf("Bind thread %d to CPU %d\n",
+			pid, pid % num_cpus);
 
 	while(1) {
 		for (i = 0; i < count; i++) {
@@ -116,8 +127,9 @@ int main(int argc, char **argv)
 	if (FILE_SIZE < END_SIZE)
 		FILE_SIZE = END_SIZE;
 
-	printf("# pthreads: %d, file size %llu, running for %d seconds\n",
-			num_threads, FILE_SIZE, seconds);
+	num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+	printf("%d cpus, # pthreads: %d, file size %llu, running for %d seconds\n",
+			num_cpus, num_threads, FILE_SIZE, seconds);
 
 	sprintf(output_name, "%d-%02d-%d-%d:%d:%d.csv",
 		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
