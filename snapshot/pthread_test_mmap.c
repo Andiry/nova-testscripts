@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 	printf("%d cpus, %d pthreads, file size %llu, running for %d seconds\n",
 			num_cpus, num_threads, FILE_SIZE, seconds);
 
-	sprintf(output_name, "%d-%02d-%d-%d:%d:%d.csv",
+	sprintf(output_name, "%d-%02d-%d-%d-%d-%d.csv",
 		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 		tm->tm_hour, tm->tm_min, tm->tm_sec);
 	printf("%s\n", output_name);
