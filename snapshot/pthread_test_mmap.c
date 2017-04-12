@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 		FILE_SIZE = END_SIZE;
 
 	num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-	printf("%d cpus, # pthreads: %d, file size %llu, running for %d seconds\n",
+	printf("%d cpus, %d pthreads, file size %llu, running for %d seconds\n",
 			num_cpus, num_threads, FILE_SIZE, seconds);
 
 	sprintf(output_name, "%d-%02d-%d-%d:%d:%d.csv",
