@@ -13,6 +13,7 @@
 #include<unistd.h>
 #include<sys/time.h>
 
+#include "FastRand.hpp"
 
 
 #define END_SIZE	(4UL * 1024 * 1024) 
@@ -22,6 +23,7 @@ volatile int finish;
 
 struct pthread_data {
 	int pid;
+	unsigned long seed;
 	char *data;
 	unsigned long long length;
 	volatile long long count;
@@ -33,10 +35,10 @@ void *pthread_transfer(void *arg)
 	struct pthread_data *pdata = arg;
 	int pid = pdata->pid;
 	char *data = pdata->data;
-	unsigned long long length = pdata->length;
+	unsigned long long range = pdata->length / 8;
 	long k;
-	unsigned long long count = length / 8;
-	unsigned long long i;
+	uint64_t pos;
+	int count = 0;
 	cpu_set_t cpuset;
 
 	CPU_ZERO(&cpuset);
@@ -46,17 +48,18 @@ void *pthread_transfer(void *arg)
 	printf("Bind thread %d to CPU %d\n",
 			pid, pid % num_cpus);
 
-	while(1) {
-		for (i = 0; i < count; i++) {
-			k = *(long *)(data + i * 8);
-			k++;
-			*(long *)(data + i * 8) = k;
-			if (i > 0 && ((i & 65535) == 0))
-				pdata->count += 65536;
+	while (1) {
+		pos = RandLFSR(&pdata->seed) & (range - 1);
+		k = *(long *)(data + pos * 8);
+		k++;
+		*(long *)(data + pos * 8) = k;
+		count++;
+		if (count > 0 && ((count & 65535) == 0)) {
+			pdata->count += 65536;
+			count = 0;
+			if (finish)
+				break;
 		}
-		pdata->count += 65536;
-		if (finish)
-			break;
 	}
 
 	pthread_exit(0);
@@ -159,8 +162,9 @@ int main(int argc, char **argv)
 	pids = (struct pthread_data *)malloc(num_threads * sizeof(struct pthread_data));
 	for (i = 0; i < num_threads; i++) {
 		pids[i].pid = i;
-		pids[i].length = FILE_SIZE / num_threads;
-		pids[i].data = data + i * pids[i].length;
+		pids[i].seed = i;
+		pids[i].length = FILE_SIZE;
+		pids[i].data = data;
 		pids[i].count = 0;
 		pthread_create(pthreads + i, NULL, pthread_transfer, (void *)(pids + i)); 
 	}
