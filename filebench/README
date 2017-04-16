@@ -20,3 +20,19 @@ Running webproxy..
 Running webserver..
 fileserver	varmail	webproxy	webserver	
 93456.802 	113191.429 	243167.045 	675009.070
+
+To run the stress testing, make sure there is enough pmem space. The default
+settings in stress.py is tuned for 64 GB pmem. Root user is probably needed to
+run the stress testing.
+
+Run all workloads concurrently:
+> ./stress.py all
+
+Run one workload several times, e.g. mongo 5 times:
+> ./stress.py mongo 5
+
+This is helpful to fill the remaining spaces when the utilization is already
+90%+ and can't afford a full large workload.
+
+When stress is running, use ./swatch.sh in another window to monitor the process
+status, and kill ones that take unexpected long time.
