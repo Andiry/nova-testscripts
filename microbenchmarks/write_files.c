@@ -69,9 +69,8 @@ static void append_files(int num_files, const char *buf, int size)
 	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
 	if (count) {
 		printf("append files: %d files, %lld nanoseconds, "
-			"per file latency %lld nanoseconds, "
 			"per request latency %lld nanoseconds.\n",
-			num_files, time, time / num_files,
+			num_files, time,
 			time / (num_files * count));
 	}
 }
@@ -106,9 +105,8 @@ static void write_files(int num_files, const char *buf, int size)
 	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
 	if (count) {
 		printf("write files: %d files, %lld nanoseconds, "
-			"per file latency %lld nanoseconds, "
 			"per request latency %lld nanoseconds.\n",
-			num_files, time, time / num_files,
+			num_files, time,
 			time / (num_files * count));
 	}
 }
@@ -143,9 +141,8 @@ static void write_files_512(int num_files, const char *buf)
 	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
 	if (count) {
 		printf("write files 512: %d files, %lld nanoseconds, "
-			"per file latency %lld nanoseconds, "
 			"per request latency %lld nanoseconds.\n",
-			num_files, time, time / num_files,
+			num_files, time,
 			time / (num_files * count));
 	}
 }
@@ -179,9 +176,8 @@ static void read_files(int num_files, char *buf, int size)
 	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
 	if (count) {
 		printf("read files: %d files, %lld nanoseconds, "
-			"per file latency %lld nanoseconds, "
 			"per request latency %lld nanoseconds.\n",
-			num_files, time, time / num_files,
+			num_files, time,
 			time / (num_files * count));
 	}
 }
