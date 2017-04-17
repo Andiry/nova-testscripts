@@ -89,6 +89,8 @@ int main(int argc, char **argv)
 
 	printf("\nSleep finish.\n");
 
+	*(data) = 'c';
+
 	free(buf);
 	munmap(data, FILE_SIZE);
 	close(fd);
