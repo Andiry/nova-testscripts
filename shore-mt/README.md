@@ -1,5 +1,6 @@
-# Shore-MT is a database implemenation.
+# Shore-MT
 
+Shore-MT is a database implemenation.
 git repo:
 https://bitbucket.org/shoremt/shore-kits/src
 
@@ -12,9 +13,11 @@ Usage:
 ~~~
 
 Run:
+~~~
 measure 100 1 20 60 0 2 0	// Mix
 measure 100 1 20 60 1 2 0	// New order
 measure 100 1 20 60 2 2 0	// Payment
+~~~
 
 Note:
 Shore-MT uses write_iter to access files. Disable it for DP and WP.
