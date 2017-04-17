@@ -25,7 +25,7 @@
 
 set $dir=/mnt/ramdisk
 set $meandirwidth=20
-set $nfiles=100000
+set $nfiles=500000
 set $meanfilesize=128k
 set $nthreads=50
 set $iosize=16k
