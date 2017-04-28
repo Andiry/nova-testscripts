@@ -12,9 +12,9 @@
 
 #define END_SIZE	(4UL * 1024 * 1024) 
 
+unsigned long long FILE_SIZE;
 const int start_size = 512;
 const char *dir = "/mnt/ramdisk/file_";
-static unsigned long long count;
 
 static void create_files(int num_files)
 {
@@ -47,6 +47,7 @@ static void append_files(int num_files, const char *buf, int size)
 	long long time;
 	int fd, i;
 	size_t ret;
+	unsigned long count = FILE_SIZE / size;
 
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	for (file_count = 0; file_count < num_files; file_count++) {
@@ -83,6 +84,7 @@ static void write_files(int num_files, const char *buf, int size)
 	long long time;
 	int fd, i;
 	size_t ret;
+	unsigned long count = FILE_SIZE / size;
 
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	for (file_count = 0; file_count < num_files; file_count++) {
@@ -104,9 +106,9 @@ static void write_files(int num_files, const char *buf, int size)
 	clock_gettime(CLOCK_MONOTONIC, &end);
 	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
 	if (count) {
-		printf("write files: %d files, %lld nanoseconds, "
+		printf("write files %d: %d files, %lld nanoseconds, "
 			"per request latency %lld nanoseconds.\n",
-			num_files, time,
+			size, num_files, time,
 			time / (num_files * count));
 	}
 }
@@ -119,6 +121,7 @@ static void write_files_512(int num_files, const char *buf)
 	long long time;
 	int fd, i;
 	size_t ret;
+	unsigned long count = FILE_SIZE / 4096;
 
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	for (file_count = 0; file_count < num_files; file_count++) {
@@ -155,6 +158,7 @@ static void read_files(int num_files, char *buf, int size)
 	long long time;
 	int fd, i;
 	size_t ret;
+	unsigned long count = FILE_SIZE / size;
 
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	for (file_count = 0; file_count < num_files; file_count++) {
@@ -175,9 +179,9 @@ static void read_files(int num_files, char *buf, int size)
 	clock_gettime(CLOCK_MONOTONIC, &end);
 	time = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
 	if (count) {
-		printf("read files: %d files, %lld nanoseconds, "
+		printf("read files %d: %d files, %lld nanoseconds, "
 			"per request latency %lld nanoseconds.\n",
-			num_files, time,
+			size, num_files, time,
 			time / (num_files * count));
 	}
 }
@@ -205,7 +209,6 @@ static void delete_files(int num_files)
 
 int main(int argc, char **argv)
 {
-	unsigned long long FILE_SIZE;
 	size_t len;
 	char c;
 	char unit;
@@ -265,14 +268,17 @@ int main(int argc, char **argv)
 	buf2 = malloc(END_SIZE);
 	memset(buf, c, req_size);
 	size = req_size;
-	count = FILE_SIZE / size;
 
 	create_files(num_files);
 	append_files(num_files, buf, size);
 	write_files(num_files, buf, size);
+	write_files(num_files, buf, size * 4);
 //	system("echo 1 > /proc/fs/NOVA/pmem0/timing_stats");
 	write_files_512(num_files, buf);
 	read_files(num_files, buf, size);
+	system("echo 1 > /proc/fs/NOVA/pmem0/timing_stats");
+	read_files(num_files, buf, size * 4);
+	system("cat /proc/fs/NOVA/pmem0/timing_stats");
 	delete_files(num_files);
 
 	free(buf1);
