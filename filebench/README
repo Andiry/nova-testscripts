@@ -1,3 +1,6 @@
+To download and install filebench automated:
+> bash filebench.sh
+
 git repo:
 github.com:filebench/filebench
 
