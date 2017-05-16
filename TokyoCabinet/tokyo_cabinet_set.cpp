@@ -91,6 +91,7 @@ void tokyocabinet_cleanup(TCHDB *hdb) {
 void tokyocabinet_bench(TCHDB *hdb, option_t *o) {
     // create cmd string
     std::string value = std::string(o->value_size, 'a');
+    double second;
 
     ggc::Timer timer("tokyocabinet-set");
     timer.start();
@@ -116,7 +117,9 @@ void tokyocabinet_bench(TCHDB *hdb, option_t *o) {
     // TokyoCabinet is probably using append-only file
     // deleting all keys does not make a difference
 
-    std::cout << "tokyocabinet-set: " << ((double)timer.duration()/1e9) << " s" << std::endl;
+    second = (double)timer.duration() / 1e9;
+    std::cout << "tokyocabinet-set: " << second << " s, "
+		<< NUM_KEYS / second << " ops/s" << std::endl;
 }
 
 int main(int argc, char *argv[])
