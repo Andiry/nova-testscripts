@@ -14,20 +14,22 @@
 #define NUM_KEYS 1000000
 #define KEY_SIZE 8
 #define VALUE_SIZE 1024
+#define PMEM_MODE 0
 
 struct option_t {
     unsigned int iterations;
     unsigned int num_keys;
     unsigned int key_size;
     unsigned int value_size;
+    unsigned int pmem_mode;
 };
 
-#if 0
 void parse_cmd(struct option_t *o, char *s) {
     std::string iterations("--iterations=");
-    std::string num_keys("--num-keys=");
-    std::string key_size("--key-size=");
-    std::string value_size("--value-size=");
+    std::string num_keys("--num_keys=");
+    std::string key_size("--key_size=");
+    std::string value_size("--value_size=");
+    std::string pmem_mode("--pmem_mode=");
 
     std::string arg(s);
     if (!arg.compare(0, iterations.size(), iterations))
@@ -38,37 +40,47 @@ void parse_cmd(struct option_t *o, char *s) {
         o->key_size = std::stoi(arg.substr(key_size.size()));
     else if (!arg.compare(0, value_size.size(), value_size))
         o->value_size = std::stoi(arg.substr(value_size.size()));
+    else if (!arg.compare(0, pmem_mode.size(), pmem_mode))
+        o->pmem_mode = std::stoi(arg.substr(pmem_mode.size()));
     else {
         std::cerr << "invalid argument: " << s << std::endl;
         exit(-1);
     }
 }
-#endif
 
 static void parse_options(option_t &o, int argc, char *argv[]) {
-    // TODO: really parse arguments to form options
-//    option_t option;
-//    for (unsigned int i = 1; i < argc; i++)
-//        parse_cmd(&option, argv[i]);
-
     o.iterations = ITERATIONS;
     o.num_keys   = NUM_KEYS;
     o.key_size   = KEY_SIZE;
     o.value_size = VALUE_SIZE;
+    o.pmem_mode = PMEM_MODE;
+
+    // TODO: really parse arguments to form options
+    option_t option;
+    for (unsigned int i = 1; i < argc; i++)
+        parse_cmd(&option, argv[i]);
 
     std::cout << "iterations: " << o.iterations << std::endl;
     std::cout << "num keys:   " << o.num_keys << std::endl;
     std::cout << "key size:   " << o.key_size << std::endl;
     std::cout << "value size: " << o.value_size << std::endl;
+    std::cout << "pmem mode:  " << o.pmem_mode << std::endl;
     std::cout << std::endl;
 
     return;
 }
 
 
-TCHDB *tokyocabinet_setup() {
+TCHDB *tokyocabinet_setup(option_t &o) {
+    int flag = HDBOWRITER | HDBOCREAT;
+
+    if (o.pmem_mode == 1)
+	flag |= HDBOMOVNT;
+    else if (o.pmem_mode == 2)
+	flag |= HDBOFLUSH;
+
     TCHDB *hdb = tchdbnew();
-    if (!tchdbopen(hdb, "dump.tch", HDBOWRITER | HDBOCREAT)) {
+    if (!tchdbopen(hdb, "dump.tch", flag)) {
         int ecode = tchdbecode(hdb);
         std::cerr << "open error: " << tchdberrmsg(ecode) << std::endl;
         tchdbdel(hdb);
@@ -127,7 +139,7 @@ int main(int argc, char *argv[])
     option_t o;
     parse_options(o, argc, argv);
 
-    TCHDB *hdb = tokyocabinet_setup();
+    TCHDB *hdb = tokyocabinet_setup(o);
 
     for (unsigned int i = 0; i < o.iterations; i++) {
         if (i) std::cout << std::endl;
