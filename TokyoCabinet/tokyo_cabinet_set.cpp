@@ -56,9 +56,9 @@ static void parse_options(option_t &o, int argc, char *argv[]) {
     o.pmem_mode = PMEM_MODE;
 
     // TODO: really parse arguments to form options
-    option_t option;
+    std::cout << argc << std::endl;
     for (unsigned int i = 1; i < argc; i++)
-        parse_cmd(&option, argv[i]);
+        parse_cmd(&o, argv[i]);
 
     std::cout << "iterations: " << o.iterations << std::endl;
     std::cout << "num keys:   " << o.num_keys << std::endl;
@@ -80,7 +80,7 @@ TCHDB *tokyocabinet_setup(option_t &o) {
 	flag |= HDBOFLUSH;
 
     TCHDB *hdb = tchdbnew();
-    if (!tchdbopen(hdb, "dump.tch", flag)) {
+    if (!tchdbopen(hdb, "/mnt/ramdisk/dump.tch", flag)) {
         int ecode = tchdbecode(hdb);
         std::cerr << "open error: " << tchdberrmsg(ecode) << std::endl;
         tchdbdel(hdb);
@@ -131,7 +131,7 @@ void tokyocabinet_bench(TCHDB *hdb, option_t *o) {
 
     second = (double)timer.duration() / 1e9;
     std::cout << "tokyocabinet-set: " << second << " s, "
-		<< NUM_KEYS / second << " ops/s" << std::endl;
+		<< o->num_keys / second << " ops/s" << std::endl;
 }
 
 int main(int argc, char *argv[])
