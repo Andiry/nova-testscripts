@@ -14,7 +14,8 @@
 #define NUM_KEYS 1000000
 #define KEY_SIZE 8
 #define VALUE_SIZE 1024
-#define PMEM_MODE 0
+#define PMEM_MODE 1
+#define FALLOC 1
 
 struct option_t {
     unsigned int iterations;
@@ -22,6 +23,7 @@ struct option_t {
     unsigned int key_size;
     unsigned int value_size;
     unsigned int pmem_mode;
+    unsigned int falloc;
 };
 
 void parse_cmd(struct option_t *o, char *s) {
@@ -30,6 +32,7 @@ void parse_cmd(struct option_t *o, char *s) {
     std::string key_size("--key_size=");
     std::string value_size("--value_size=");
     std::string pmem_mode("--pmem_mode=");
+    std::string falloc("--fallocate=");
 
     std::string arg(s);
     if (!arg.compare(0, iterations.size(), iterations))
@@ -42,6 +45,8 @@ void parse_cmd(struct option_t *o, char *s) {
         o->value_size = std::stoi(arg.substr(value_size.size()));
     else if (!arg.compare(0, pmem_mode.size(), pmem_mode))
         o->pmem_mode = std::stoi(arg.substr(pmem_mode.size()));
+    else if (!arg.compare(0, falloc.size(), falloc))
+        o->falloc = std::stoi(arg.substr(falloc.size()));
     else {
         std::cerr << "invalid argument: " << s << std::endl;
         exit(-1);
@@ -54,6 +59,7 @@ static void parse_options(option_t &o, int argc, char *argv[]) {
     o.key_size   = KEY_SIZE;
     o.value_size = VALUE_SIZE;
     o.pmem_mode = PMEM_MODE;
+    o.falloc = FALLOC;
 
     // TODO: really parse arguments to form options
     std::cout << argc << std::endl;
@@ -65,6 +71,7 @@ static void parse_options(option_t &o, int argc, char *argv[]) {
     std::cout << "key size:   " << o.key_size << std::endl;
     std::cout << "value size: " << o.value_size << std::endl;
     std::cout << "pmem mode:  " << o.pmem_mode << std::endl;
+    std::cout << "fallocate:  " << o.falloc << std::endl;
     std::cout << std::endl;
 
     return;
@@ -78,6 +85,9 @@ TCHDB *tokyocabinet_setup(option_t &o) {
 	flag |= HDBOMOVNT;
     else if (o.pmem_mode == 2)
 	flag |= HDBOFLUSH;
+
+    if (o.falloc)
+	flag |= HDBOFALLOC;
 
     TCHDB *hdb = tchdbnew();
     if (!tchdbopen(hdb, "/mnt/ramdisk/dump.tch", flag)) {
@@ -140,6 +150,7 @@ int main(int argc, char *argv[])
     parse_options(o, argc, argv);
 
     TCHDB *hdb = tokyocabinet_setup(o);
+    system("echo 1 > /proc/fs/NOVA/pmem0/timing_stats");
 
     for (unsigned int i = 0; i < o.iterations; i++) {
         if (i) std::cout << std::endl;
