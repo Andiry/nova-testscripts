@@ -16,6 +16,7 @@
 #define VALUE_SIZE 1024
 #define PMEM_MODE 1
 #define FALLOC 1
+#define MREMAP 1
 
 struct option_t {
     unsigned int iterations;
@@ -24,6 +25,7 @@ struct option_t {
     unsigned int value_size;
     unsigned int pmem_mode;
     unsigned int falloc;
+    unsigned int mremap;
 };
 
 void parse_cmd(struct option_t *o, char *s) {
@@ -33,6 +35,7 @@ void parse_cmd(struct option_t *o, char *s) {
     std::string value_size("--value_size=");
     std::string pmem_mode("--pmem_mode=");
     std::string falloc("--fallocate=");
+    std::string mremap("--mremap=");
 
     std::string arg(s);
     if (!arg.compare(0, iterations.size(), iterations))
@@ -47,6 +50,8 @@ void parse_cmd(struct option_t *o, char *s) {
         o->pmem_mode = std::stoi(arg.substr(pmem_mode.size()));
     else if (!arg.compare(0, falloc.size(), falloc))
         o->falloc = std::stoi(arg.substr(falloc.size()));
+    else if (!arg.compare(0, mremap.size(), mremap))
+        o->mremap = std::stoi(arg.substr(mremap.size()));
     else {
         std::cerr << "invalid argument: " << s << std::endl;
         exit(-1);
@@ -60,6 +65,7 @@ static void parse_options(option_t &o, int argc, char *argv[]) {
     o.value_size = VALUE_SIZE;
     o.pmem_mode = PMEM_MODE;
     o.falloc = FALLOC;
+    o.mremap = MREMAP;
 
     // TODO: really parse arguments to form options
     std::cout << argc << std::endl;
@@ -72,6 +78,7 @@ static void parse_options(option_t &o, int argc, char *argv[]) {
     std::cout << "value size: " << o.value_size << std::endl;
     std::cout << "pmem mode:  " << o.pmem_mode << std::endl;
     std::cout << "fallocate:  " << o.falloc << std::endl;
+    std::cout << "mremap:     " << o.mremap << std::endl;
     std::cout << std::endl;
 
     return;
@@ -88,6 +95,9 @@ TCHDB *tokyocabinet_setup(option_t &o) {
 
     if (o.falloc)
 	flag |= HDBOFALLOC;
+
+    if (o.mremap)
+	flag |= HDBOREMAP;
 
     TCHDB *hdb = tchdbnew();
     if (!tchdbopen(hdb, "/mnt/ramdisk/dump.tch", flag)) {
