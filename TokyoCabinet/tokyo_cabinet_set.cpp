@@ -17,6 +17,7 @@
 #define PMEM_MODE 1
 #define FALLOC 1
 #define MREMAP 1
+#define ZEROCOPY 1
 
 struct option_t {
     unsigned int iterations;
@@ -26,6 +27,7 @@ struct option_t {
     unsigned int pmem_mode;
     unsigned int falloc;
     unsigned int mremap;
+    unsigned int zerocopy;
 };
 
 void parse_cmd(struct option_t *o, char *s) {
@@ -36,6 +38,7 @@ void parse_cmd(struct option_t *o, char *s) {
     std::string pmem_mode("--pmem_mode=");
     std::string falloc("--fallocate=");
     std::string mremap("--mremap=");
+    std::string zerocopy("--zerocopy=");
 
     std::string arg(s);
     if (!arg.compare(0, iterations.size(), iterations))
@@ -52,6 +55,8 @@ void parse_cmd(struct option_t *o, char *s) {
         o->falloc = std::stoi(arg.substr(falloc.size()));
     else if (!arg.compare(0, mremap.size(), mremap))
         o->mremap = std::stoi(arg.substr(mremap.size()));
+    else if (!arg.compare(0, zerocopy.size(), zerocopy))
+        o->zerocopy = std::stoi(arg.substr(zerocopy.size()));
     else {
         std::cerr << "invalid argument: " << s << std::endl;
         exit(-1);
@@ -66,6 +71,7 @@ static void parse_options(option_t &o, int argc, char *argv[]) {
     o.pmem_mode = PMEM_MODE;
     o.falloc = FALLOC;
     o.mremap = MREMAP;
+    o.zerocopy = ZEROCOPY;
 
     // TODO: really parse arguments to form options
     std::cout << argc << std::endl;
@@ -79,6 +85,7 @@ static void parse_options(option_t &o, int argc, char *argv[]) {
     std::cout << "pmem mode:  " << o.pmem_mode << std::endl;
     std::cout << "fallocate:  " << o.falloc << std::endl;
     std::cout << "mremap:     " << o.mremap << std::endl;
+    std::cout << "zerocopy:   " << o.zerocopy << std::endl;
     std::cout << std::endl;
 
     return;
@@ -98,6 +105,9 @@ TCHDB *tokyocabinet_setup(option_t &o) {
 
     if (o.mremap)
 	flag |= HDBOREMAP;
+
+    if (o.zerocopy)
+	flag |= HDBOZEROCOPY;
 
     TCHDB *hdb = tchdbnew();
     if (!tchdbopen(hdb, "/mnt/ramdisk/dump.tch", flag)) {
