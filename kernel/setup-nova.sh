@@ -1,10 +1,14 @@
 #!/bin/sh
 
 modprobe libcrc32c
-umount /mnt/ramdisk
+mkdir -p /mnt/ramdisk
+mkdir -p /mnt/scratch
+
 umount /mnt/scratch
+umount /mnt/ramdisk
+
 rmmod nova
-insmod nova.ko measure_timing=0 \
+modprobe nova measure_timing=0 \
 	inplace_data_updates=0 \
 	wprotect=0 mmap_cow=1 \
 	unsafe_metadata=1 \
@@ -14,5 +18,5 @@ insmod nova.ko measure_timing=0 \
 sleep 1
 
 mount -t NOVA -o init /dev/pmem0 /mnt/ramdisk
-mount -t NOVA -o init /dev/pmem1 /mnt/scratch
+#mount -t NOVA -o init /dev/pmem1 /mnt/scratch
 
