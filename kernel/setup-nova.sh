@@ -8,7 +8,7 @@ umount /mnt/scratch
 umount /mnt/ramdisk
 
 rmmod nova
-modprobe nova measure_timing=0 \
+insmod nova-dev/nova.ko measure_timing=0 \
 	inplace_data_updates=0 \
 	wprotect=0 mmap_cow=1 \
 	unsafe_metadata=1 \
