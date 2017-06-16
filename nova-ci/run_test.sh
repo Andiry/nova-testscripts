@@ -105,5 +105,5 @@ function update_and_build_nova() {
 }
 
 
-get_packages()
-update_and_build_nova()
+get_packages
+update_and_build_nova
