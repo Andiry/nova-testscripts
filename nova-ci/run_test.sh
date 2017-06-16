@@ -5,6 +5,14 @@ R=$PWD/results/$DATE
 mkdir -p $R
 CI_HOME=$HOME/nova-testscripts/nova-ci/
 
+function get_kernel_version() {
+    pushd $CI_HOME
+    (cd linux-nova; 
+	make kernelversion
+	)
+    popd
+}
+
 function get_packages() {
     sudo apt-get -y update
     sudo apt-get -y build-dep linux-image-$(uname -r) fakeroot
@@ -24,17 +32,21 @@ function build_kernel () {
 	make  deb-pkg LOCALVERSION=-nova
 	) > $R/kernel_build.log
     popd
+    KERNEL_VERSION=$(get_kernel_version)
 }
 
 function install_kernel() {
+    KERNEL_VERSION=$(get_kernel_version)
     pushd $CI_HOME
-    (sudo dpkg -i linux-image-*-nova_4.10.0-rc8-nova-2_amd64.deb && sudo dpkg -i linux-headers-*-rc8-nova_4.10.0-rc8-nova-2_amd64.deb) || return 1
-    popd
+    (cd $CI_HOME;
+	sudo dpkg -i   linux-image-${KERNEL_VERSION}-${KERNEL_VERSION}-?_amd64.deb &&
+	sudo dpkg -i linux-headers-${KERNEL_VERSION}-${KERNEL_VERSION}-?_amd64.deb) || false
 }
 
 function do_reboot() {
     echo Rebooting...
-    reboot
+    exit 0
+    #reboot
 }
 
 function build_module() {
@@ -44,10 +56,11 @@ function build_module() {
 	make modules_prepare
 	make SUBDIRS=scripts/mod
 	make SUBDIRS=fs/nova
-	cp drivers/staging/ft1000/ft1000-usb/ft1000.ko /lib/modules/3.2.0-4-686-pae/kernel/drivers/staging/
-	depmod
+	cp fs/nova/nova.ko /lib/modules//kernel/fs
+	sudo depmod
 	) > $R/module_build.log
     popd
+    KERNEL_VERSION=$(get_kernel_version)
 }
 
 function update_and_build_nova() {
