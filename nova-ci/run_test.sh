@@ -16,7 +16,7 @@ function get_kernel_version() {
 function get_packages() {
     sudo apt-get -y update
     sudo apt-get -y build-dep linux-image-$(uname -r) fakeroot
-    sudo apt-get -y install make gcc
+    sudo apt-get -y install make gcc emacs
 }
 
 function update_kernel () {
@@ -51,12 +51,13 @@ function do_reboot() {
 
 function build_module() {
     pushd $CI_HOME
-    (cd linux-nova;
+    (set -v;
+	cd linux-nova;
 	make prepare
 	make modules_prepare
 	make SUBDIRS=scripts/mod
 	make SUBDIRS=fs/nova
-	cp fs/nova/nova.ko /lib/modules//kernel/fs
+	cp fs/nova/nova.ko /lib/modules/${KERNEL_VERSION}/kernel/fs
 	sudo depmod
 	) > $R/module_build.log
     popd
@@ -68,7 +69,8 @@ function update_and_build_nova() {
     if [ -d linux-nova ]; then
 	cd linux-nova
 	
-	if git diff --name-only origin/master | grep -v fs/nova; then
+	if git diff --name-only origin/master | grep -v fs/nova || 
+	    ! [ -f /boot/vmlinuz-${KERNEL_VERSION}-* ]; then
 	    git pull
 	    build_kernel
 	    if install_kernel; then
