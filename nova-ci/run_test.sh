@@ -4,6 +4,7 @@ DATE=$(date +"%F-%H-%M-%S.%N")
 R=$PWD/results/$DATE
 mkdir -p $R
 CI_HOME=$HOME/nova-testscripts/nova-ci/
+K_SUFFIX=nova
 
 function get_kernel_version() {
     (cd $CI_HOME/linux-nova; 
@@ -29,7 +30,7 @@ function build_kernel () {
     cp ../kernel/gce.config ./linux-nova/.config
     (set -v;
 	cd linux-nova; 
-	make  deb-pkg LOCALVERSION=-nova
+	make  deb-pkg LOCALVERSION=${K_SUFFIX}
 	) > $R/kernel_build.log
     popd
     KERNEL_VERSION=$(get_kernel_version)
@@ -39,8 +40,8 @@ function install_kernel() {
     KERNEL_VERSION=$(get_kernel_version)
     pushd $CI_HOME
     (cd $CI_HOME;
-	sudo dpkg -i   linux-image-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb &&
-	sudo dpkg -i linux-headers-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb) || false
+	sudo dpkg -i   linux-image-${KERNEL_VERSION}-${K_SUFFIX}_${KERNEL_VERSION}-${K_SUFFIX}-?_amd64.deb &&
+	sudo dpkg -i linux-headers-${KERNEL_VERSION}_${K_SUFFIX}_${KERNEL_VERSION}-${K_SUFFIX}-?_amd64.deb) || false
 }
 
 function do_reboot() {
