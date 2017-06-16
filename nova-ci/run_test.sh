@@ -13,6 +13,13 @@ function get_kernel_version() {
 
 }
 
+function compute_grub_default() {
+    KERNEL_VERSION=$(get_kernel_version)
+    menu=grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION-$K_SUFFIX | grep -v recovery | cut -f 1 -d :
+    menu=$[n-2]
+    echo "1>$menu"
+}
+
 function get_packages() {
     sudo apt-get -y update
     sudo apt-get -y build-dep linux-image-$(uname -r) fakeroot
