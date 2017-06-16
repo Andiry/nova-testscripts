@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+ #!/usr/bin/env bash
 
 DATE=$(date +"%F-%H-%M-%S.%N")
 R=$PWD/results/$DATE
@@ -6,11 +6,10 @@ mkdir -p $R
 CI_HOME=$HOME/nova-testscripts/nova-ci/
 
 function get_kernel_version() {
-    pushd $CI_HOME
-    (cd linux-nova; 
+    (cd $CI_HOME/linux-nova; 
 	make kernelversion
 	)
-    popd
+
 }
 
 function get_packages() {
@@ -60,7 +59,7 @@ function build_module() {
 	make SUBDIRS=fs/nova
 	cp fs/nova/nova.ko /lib/modules/${KERNEL_VERSION}/kernel/fs
 	sudo depmod
-	) > $R/module_build.log
+	) |tee $R/module_build.log
     popd
     KERNEL_VERSION=$(get_kernel_version)
 }
