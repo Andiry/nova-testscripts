@@ -49,12 +49,13 @@ function install_kernel() {
     (cd $CI_HOME;
 	sudo dpkg -i   linux-image-${KERNEL_VERSION}-${K_SUFFIX}_${KERNEL_VERSION}-${K_SUFFIX}-?_amd64.deb &&
 	sudo dpkg -i linux-headers-${KERNEL_VERSION}-${K_SUFFIX}_${KERNEL_VERSION}-${K_SUFFIX}-?_amd64.deb) || false
+    sudo update-grub
 }
 
-function do_reboot() {
+function reboot_to_nova() {
     echo Rebooting...
-    exit 0
-    #reboot
+    sudo grub-reboot $(compute_grub_default )
+    sudo systemctl reboot -i
 }
 
 function build_module() {
@@ -82,7 +83,7 @@ function update_and_build_nova() {
 	    git pull
 	    build_kernel
 	    if install_kernel; then
-		reboot
+		reboot_to_nova
 	    else
 		echo "Install failed"
 	    fi
@@ -94,10 +95,15 @@ function update_and_build_nova() {
 	git clone git@github.com:NVSL/linux-nova.git
 	cd linux-nova
 	build_kernel
+        if install_kernel; then
+            reboot_to_nova
+        else
+            echo "Install failed"
+        fi
     fi
     popd 
 }
 
 
-#get_packages()
-#build_module()
+get_packages()
+update_and_build_nova()
