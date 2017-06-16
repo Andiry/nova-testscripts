@@ -28,7 +28,8 @@ function update_kernel () {
 function build_kernel () {
     pushd $CI_HOME
     cp ../kernel/gce.config ./linux-nova/.config
-    (cd linux-nova; 
+    (set -v;
+	cd linux-nova; 
 	make  deb-pkg LOCALVERSION=-nova
 	) > $R/kernel_build.log
     popd
