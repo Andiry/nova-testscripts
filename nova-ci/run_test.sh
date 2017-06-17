@@ -45,7 +45,7 @@ function build_kernel () {
     (
 	set -v;
 	cd linux-nova; 
-	make  deb-pkg LOCALVERSION=-${K_SUFFIX};
+	make -j9 deb-pkg LOCALVERSION=-${K_SUFFIX};
 	) 2>&1 | tee $R/kernel_build.log 
     popd
     KERNEL_VERSION=$(get_kernel_version)
@@ -84,6 +84,15 @@ function build_module() {
     KERNEL_VERSION=$(get_kernel_version)
 }
 
+function build_and_reboot() {
+    build_kernel
+    if install_kernel; then
+	reboot_to_nova
+    else
+	echo "Install failed"
+    fi
+}
+
 function update_and_build_nova() {
     pushd $CI_HOME
     if [ -d linux-nova ]; then
@@ -96,37 +105,27 @@ function update_and_build_nova() {
 	    ls /boot/*
 	    
 	    git pull
-	    build_kernel
-	    if install_kernel; then
-		reboot_to_nova
-	    else
-		echo "Install failed"
-	    fi
+	    build_and_reboot
 	else
 	    git pull
 	    build_module
 	fi
     else
 	echo Linux sources missing
-
 	git clone git@github.com:NVSL/linux-nova.git
 	cd linux-nova
-	build_kernel
-        if install_kernel; then
-            reboot_to_nova
-        else
-            echo "Install failed"
-        fi
+	build_and_reboot
     fi
     popd 
 }
 
 function mount_nova() {
-    
+    true
 }
 
 (
     set -v
     get_packages
     update_and_build_nova
+    mount_nova
 ) 2>&1 | tee  $R/run_test.log
