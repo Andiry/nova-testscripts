@@ -113,8 +113,12 @@ function update_and_build_nova() {
     else
 	echo Linux sources missing
 	git clone git@github.com:NVSL/linux-nova.git
-	cd linux-nova
-	build_and_reboot
+	if [ -d linux-nova ]; then
+	    cd linux-nova
+	    build_and_reboot
+	else
+	    echo git failed
+	fi
     fi
     popd 
 }
