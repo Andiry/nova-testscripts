@@ -37,7 +37,7 @@ function build_kernel () {
     cp ../kernel/gce.config ./linux-nova/.config
     (set -v;
 	cd linux-nova; 
-	make  deb-pkg LOCALVERSION=${K_SUFFIX}
+	make  deb-pkg LOCALVERSION=-${K_SUFFIX}
 	) > $R/kernel_build.log
     popd
     KERNEL_VERSION=$(get_kernel_version)
