@@ -5,19 +5,23 @@ if ! [ -f run_test.sh ]; then
     exit 1
 fi
 
-DATE=$(date +"%F-%H-%M-%S.%N")
+export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
 R=$PWD/results/$DATE
 mkdir -p $R
-ln -sf $PWD/results/latest $R
-CI_HOME=$HOME/nova-testscripts/nova-ci/
+export NOVA_CI_LOG_DIR=$PWD/results/latest
+ln -sf ${NOVA_CI_LOG_DIR} $R
+
+export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
 K_SUFFIX=nova
 
 function get_kernel_version() {
     (
-	cd $CI_HOME/linux-nova; 
+	cd $NOVA_CI_HOME/linux-nova; 
 	make kernelversion
 	)
 }
+
+export NOVA_CI_KERNEL_NAME=$(get_kernel_version)
 
 function compute_grub_default() {
     KERNEL_VERSION=$(get_kernel_version)
@@ -33,13 +37,13 @@ function get_packages() {
 }
 
 function update_kernel () {
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     git clone git@github.com:NVSL/linux-nova.git || (cd linux-nova; git pull)
     popd
 }
 
 function build_kernel () {
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     cp ../kernel/gce.config ./linux-nova/.config
     sudo rm -rf *.tar.gz *.dsc *.deb *.changes
     (
@@ -53,10 +57,10 @@ function build_kernel () {
 
 function install_kernel() {
     KERNEL_VERSION=$(get_kernel_version)
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     (
 	set -v;
-	cd $CI_HOME;
+	cd $NOVA_CI_HOME;
 	sudo dpkg -i   linux-image-${KERNEL_VERSION}-${K_SUFFIX}_${KERNEL_VERSION}-${K_SUFFIX}-?_amd64.deb &&
 	sudo dpkg -i linux-headers-${KERNEL_VERSION}-${K_SUFFIX}_${KERNEL_VERSION}-${K_SUFFIX}-?_amd64.deb
 	) || false
@@ -70,7 +74,7 @@ function reboot_to_nova() {
 }
 
 function build_module() {
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     (set -v;
 	cd linux-nova;
 	make prepare
@@ -94,7 +98,7 @@ function build_and_reboot() {
 }
 
 function update_and_build_nova() {
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     if [ -d linux-nova ]; then
 	cd linux-nova
 	
