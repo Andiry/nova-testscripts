@@ -25,7 +25,7 @@ function get_kernel_version() {
 }
 
 function compute_grub_default() {
-    menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION-$K_SUFFIX | grep -v recovery | cut -f 1 -d :)
+    menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION| grep -v recovery | cut -f 1 -d :)
     menu=$[menu-2]
     echo "1>$menu"
 }
