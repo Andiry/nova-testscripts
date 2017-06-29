@@ -12,15 +12,19 @@ ln -sf $PWD/results/latest $R
 CI_HOME=$HOME/nova-testscripts/nova-ci/
 K_SUFFIX=nova
 
+function count_cpus() {
+    cat /proc/cpuinfo  | grep processor | wc -l
+}
+
 function get_kernel_version() {
     (
 	cd $CI_HOME/linux-nova; 
-	make kernelversion
+	make kernelversion | perl -ne 'chop;print'
+	echo -${K_SUFFIX}
 	)
 }
 
 function compute_grub_default() {
-    KERNEL_VERSION=$(get_kernel_version)
     menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION-$K_SUFFIX | grep -v recovery | cut -f 1 -d :)
     menu=$[menu-2]
     echo "1>$menu"
@@ -45,20 +49,18 @@ function build_kernel () {
     (
 	set -v;
 	cd linux-nova; 
-	make -j9 deb-pkg LOCALVERSION=-${K_SUFFIX};
+	make -j$[$(count_cpus) + 1] deb-pkg LOCALVERSION=-${K_SUFFIX};
 	) 2>&1 | tee $R/kernel_build.log 
     popd
-    KERNEL_VERSION=$(get_kernel_version)
 }
 
 function install_kernel() {
-    KERNEL_VERSION=$(get_kernel_version)
     pushd $CI_HOME
     (
 	set -v;
 	cd $CI_HOME;
-	sudo dpkg -i   linux-image-${KERNEL_VERSION}-${K_SUFFIX}_${KERNEL_VERSION}-${K_SUFFIX}-?_amd64.deb &&
-	sudo dpkg -i linux-headers-${KERNEL_VERSION}-${K_SUFFIX}_${KERNEL_VERSION}-${K_SUFFIX}-?_amd64.deb
+	sudo dpkg -i   linux-image-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb &&
+	sudo dpkg -i linux-headers-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb
 	) || false
     sudo update-grub
 }
@@ -77,11 +79,11 @@ function build_module() {
 	make modules_prepare
 	make SUBDIRS=scripts/mod
 	make SUBDIRS=fs/nova
-	cp fs/nova/nova.ko /lib/modules/${KERNEL_VERSION}/kernel/fs
+	sudo cp fs/nova/nova.ko /lib/modules/${KERNEL_VERSION}/kernel/fs
 	sudo depmod
 	) |tee $R/module_build.log
     popd
-    KERNEL_VERSION=$(get_kernel_version)
+
 }
 
 function build_and_reboot() {
@@ -127,7 +129,12 @@ function mount_nova() {
     true
 }
 
+export KERNEL_VERSION=$(get_kernel_version)
+
+
+
 (
+    exit
     set -v
     get_packages
     update_and_build_nova
