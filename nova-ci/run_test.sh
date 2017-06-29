@@ -5,11 +5,13 @@ if ! [ -f run_test.sh ]; then
     exit 1
 fi
 
-DATE=$(date +"%F-%H-%M-%S.%N")
+export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
 R=$PWD/results/$DATE
 mkdir -p $R
-ln -sf $PWD/results/latest $R
-CI_HOME=$HOME/nova-testscripts/nova-ci/
+export NOVA_CI_LOG_DIR=$PWD/results/latest
+ln -sf ${NOVA_CI_LOG_DIR} $R
+
+export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
 K_SUFFIX=nova
 
 function count_cpus() {
@@ -18,11 +20,13 @@ function count_cpus() {
 
 function get_kernel_version() {
     (
-	cd $CI_HOME/linux-nova; 
+	cd $NOVA_CI_HOME/linux-nova; 
 	make kernelversion | perl -ne 'chop;print'
 	echo -${K_SUFFIX}
-	)
+    )
 }
+
+export NOVA_CI_KERNEL_NAME=$(get_kernel_version)
 
 function compute_grub_default() {
     menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION| grep -v recovery | cut -f 1 -d :)
@@ -37,13 +41,13 @@ function get_packages() {
 }
 
 function update_kernel () {
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     git clone git@github.com:NVSL/linux-nova.git || (cd linux-nova; git pull)
     popd
 }
 
 function build_kernel () {
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     cp ../kernel/gce.config ./linux-nova/.config
     sudo rm -rf *.tar.gz *.dsc *.deb *.changes
     (
@@ -55,10 +59,11 @@ function build_kernel () {
 }
 
 function install_kernel() {
-    pushd $CI_HOME
+
+    pushd $NOVA_CI_HOME
     (
 	set -v;
-	cd $CI_HOME;
+	cd $NOVA_CI_HOME;
 	sudo dpkg -i   linux-image-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb &&
 	sudo dpkg -i linux-headers-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb
 	) || false
@@ -72,7 +77,7 @@ function reboot_to_nova() {
 }
 
 function build_module() {
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     (set -v;
 	cd linux-nova;
 	make prepare
@@ -95,8 +100,9 @@ function build_and_reboot() {
     fi
 }
 
+
 function update_and_build_nova() {
-    pushd $CI_HOME
+    pushd $NOVA_CI_HOME
     if [ -d linux-nova ]; then
 	cd linux-nova
 	
@@ -125,13 +131,45 @@ function update_and_build_nova() {
     popd 
 }
 
+export NOVA_CI_PRIMARY_FS=/mnt/ramdisk
+export NOVA_CI_SECONDARY_FS=/mnt/scratch
+export NOVA_CI_PRIMARY_DEV=/dev/pmem0
+export NOVA_CI_SECONDARY_DEV=/mnt/pmem1
+
 function mount_nova() {
-    true
+    
+    sudo modprobe libcrc32c
+    sudo mkdir -p $NOVA_CI_PRIMARY_FS
+    sudo mkdir -p $NOVA_CI_SECONDARY_FS
+    
+    sudo umount $NOVA_CI_SECONDARY_FS
+    sudo umount $NOVA_CI_PRIMARY_FS
+    
+    sudo rmmod nova
+    sudo insmod nova-dev/nova.ko measure_timing=0 \
+	 inplace_data_updates=0 \
+	 wprotect=0 mmap_cow=1 \
+	 unsafe_metadata=1 \
+	 replica_metadata=1 metadata_csum=1 dram_struct_csum=1 \
+	 data_csum=1 data_parity=1
+    
+    sleep 1
+    
+    sudo mount -t NOVA -o init $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
+    sudo mount -t NOVA -o init $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
+
+}
+
+function run_tests() {
+    for i in $(cat ${NOVA_CI_HOME}/test_to_run.txt); do
+	(cd $i;
+	 mount_nova
+	 bash -v ./go.sh
+	) 2>&1 | tee ${NOVA_CI_LOG_DIR}/go.log
+    done
 }
 
 export KERNEL_VERSION=$(get_kernel_version)
-
-
 
 (
     exit
