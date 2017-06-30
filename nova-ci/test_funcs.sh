@@ -1,18 +1,25 @@
- #!/usr/bin/env bash
 
-if ! [ -f run_test.sh ]; then
-    echo You are running in the wrong directory.
-    exit 1
-fi
+function init_tests() {
+    
+    export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
+    R=$PWD/results/$NOVA_CI_DATE
+    mkdir -p $R
+    export NOVA_CI_LOG_DIR=$PWD/results/latest
+    ln -sf $R  ${NOVA_CI_LOG_DIR}  
+    
+    export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
+    K_SUFFIX=nova
 
-export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
-R=$PWD/results/$DATE
-mkdir -p $R
-export NOVA_CI_LOG_DIR=$PWD/results/latest
-ln -sf ${NOVA_CI_LOG_DIR} $R
+    export NOVA_CI_PRIMARY_FS=/mnt/ramdisk
+    export NOVA_CI_SECONDARY_FS=/mnt/scratch
+    export NOVA_CI_PRIMARY_DEV=/dev/pmem0
+    export NOVA_CI_SECONDARY_DEV=/dev/pmem1
 
-export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
-K_SUFFIX=nova
+    export NOVA_CI_KERNEL_NAME=$(get_kernel_version)
+
+    export KERNEL_VERSION=$(get_kernel_version)
+
+}
 
 function count_cpus() {
     cat /proc/cpuinfo  | grep processor | wc -l
@@ -26,7 +33,6 @@ function get_kernel_version() {
     )
 }
 
-export NOVA_CI_KERNEL_NAME=$(get_kernel_version)
 
 function compute_grub_default() {
     menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION| grep -v recovery | cut -f 1 -d :)
@@ -131,22 +137,36 @@ function update_and_build_nova() {
     popd 
 }
 
-export NOVA_CI_PRIMARY_FS=/mnt/ramdisk
-export NOVA_CI_SECONDARY_FS=/mnt/scratch
-export NOVA_CI_PRIMARY_DEV=/dev/pmem0
-export NOVA_CI_SECONDARY_DEV=/mnt/pmem1
 
 function mount_nova() {
-    
-    sudo modprobe libcrc32c
-    sudo mkdir -p $NOVA_CI_PRIMARY_FS
-    sudo mkdir -p $NOVA_CI_SECONDARY_FS
     
     sudo umount $NOVA_CI_SECONDARY_FS
     sudo umount $NOVA_CI_PRIMARY_FS
     
+
+    load_nova
+    
+    sudo mkdir -p $NOVA_CI_PRIMARY_FS
+    sudo mkdir -p $NOVA_CI_SECONDARY_FS
+    
+    
+    sudo mount -t NOVA -o init $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
+    sudo mount -t NOVA -o init $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
+}
+
+function remount_nova() {
+    sudo umount $NOVA_CI_SECONDARY_FS
+    sudo umount $NOVA_CI_PRIMARY_FS
+    
+    sudo mount -t NOVA $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
+    sudo mount -t NOVA $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
+}
+
+function load_nova() {
+    
+    sudo modprobe libcrc32c
     sudo rmmod nova
-    sudo insmod nova-dev/nova.ko measure_timing=0 \
+    sudo modprobe nova measure_timing=0 \
 	 inplace_data_updates=0 \
 	 wprotect=0 mmap_cow=1 \
 	 unsafe_metadata=1 \
@@ -154,27 +174,23 @@ function mount_nova() {
 	 data_csum=1 data_parity=1
     
     sleep 1
-    
-    sudo mount -t NOVA -o init $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
-    sudo mount -t NOVA -o init $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
+
 
 }
+
 
 function run_tests() {
-    for i in $(cat ${NOVA_CI_HOME}/test_to_run.txt); do
+    if [ ".$1" = "." ]; then
+	targets=$(cat ${NOVA_CI_HOME}/tests_to_run.txt)
+    else
+	targets=$1
+	shift
+    fi
+    
+    for i in $targets; do
 	(cd $i;
 	 mount_nova
-	 bash -v ./go.sh
-	) 2>&1 | tee ${NOVA_CI_LOG_DIR}/go.log
+	 bash -v ./go.sh $*
+	) 2>&1 | tee ${NOVA_CI_LOG_DIR}/$i.log
     done
 }
-
-export KERNEL_VERSION=$(get_kernel_version)
-
-(
-    exit
-    set -v
-    get_packages
-    update_and_build_nova
-    mount_nova
-) 2>&1 | tee  $R/run_test.log
