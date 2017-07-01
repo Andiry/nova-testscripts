@@ -1,25 +1,29 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -v
 
 . $NOVA_CI_HOME/test_util.sh
 
-$XFSTESTS=$(clone_or_pull git@github.com:NVSL/xfstests.git)
+export XFSTESTS=$(clone_or_pull git@github.com:NVSL/xfstests.git hacked-for-gce)
 
 export FSTYP=NOVA
-export TEST_DEV=/dev/pmem0
-export TEST_DIR=/mnt/ramdisk
-export SCRATCH_DEV=/dev/pmem1
-export SCRATCH_MNT=/mnt/scratch
+export TEST_DEV=$NOVA_CI_PRIMARY_DEV
+export TEST_DIR=$NOVA_CI_PRIMARY_FS
+export SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV
+export SCRATCH_MNT=$NOVA_CI_SECONDARY_FS
 
-(cd $XFSTEST
- sudo apt-get install xfslibs-dev uuid-dev libtool-bin \
+echo $XFSTESTS
+
+(set -v
+ cd $XFSTESTS
+ sudo apt-get install -y xfslibs-dev uuid-dev libtool-bin \
       e2fsprogs automake gcc libuuid1 quota attr libattr1-dev make \
       libacl1-dev libaio-dev xfsprogs libgdbm-dev gawk fio dbench \
       uuid-runtime
- make
- make install
- sudo useradd fsgqa
- sudo useradd 123456-fsgqa
+ #make
+ #sudo make install
+ #sudo useradd fsgqa
+ #sudo useradd 123456-fsgqa
+ pwd
+ sudo FSTYP=NOVA TEST_DEV=$NOVA_CI_PRIMARY_DEV TEST_DIR=$NOVA_CI_PRIMARY_FS SCRATCH_MNT=$NOVA_CI_SECONDARY_FS SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV bash  ./check $* 2>&1 | tee ${NOVA_CI_LOG_DIR}/xfstests-results.out
+ sudo ./to_junit.py < ${NOVA_CI_LOG_DIR}/xfstests-results.out > ${NOVA_CI_LOG_DIR}/xfstests-results.xml
 )
 
-sudo /var/lib/jenkins/workspace/nova-build3/xfstests/check 2>&1 | tee ${NOVA_CI_LOG_DIR}/xfstests-results.out
-./to_junit.py < ${NOVA_CI_LOG_DIR}/xfstests-results.out > ${NOVA_CI_LOG_DIR}/xfstests-results.xml

@@ -1,10 +1,12 @@
 
 function init_tests() {
-    
+
+    set -v
     export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
     R=$PWD/results/$NOVA_CI_DATE
     mkdir -p $R
     export NOVA_CI_LOG_DIR=$PWD/results/latest
+    rm ${NOVA_CI_LOG_DIR}
     ln -sf $R  ${NOVA_CI_LOG_DIR}  
     
     export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
