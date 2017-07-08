@@ -1,0 +1,11 @@
+echo ====================================================
+echo PMEM:
+ls /dev/pmem*
+if  ! [ -e /dev/pmem0 -a -e /dev/pmem1 ]; then
+    echo missing pmem devices.
+    for s in 3 2 1; do
+	echo "rebooting in $s"
+	sleep 1;
+    done
+    sudo reboot
+fi

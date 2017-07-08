@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+
+cd nova-testscripts/nova-ci;
+. test_funcs.sh
+init_tests
