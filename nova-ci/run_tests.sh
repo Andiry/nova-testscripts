@@ -6,10 +6,5 @@ if ! [ -f test_funcs.sh ]; then
 fi
 
 . ./test_funcs.sh
-
-(
-    set -v
-    init_tests
-    mount_nova
-    run_tests $*
-) 2>&1 | tee  $NOVA_CI_LOG_DIR/run_test.log
+init_tests
+do_run_tests $*
