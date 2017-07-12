@@ -7,5 +7,7 @@ if  ! [ -e /dev/pmem0 -a -e /dev/pmem1 ]; then
 	echo "rebooting in $s"
 	sleep 1;
     done
-    sudo reboot
+    if ! [ -e .dont_reboot ]; then
+	sudo reboot
+    fi
 fi
