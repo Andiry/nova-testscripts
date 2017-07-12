@@ -201,7 +201,7 @@ function reload_nova() {
 
     protect="replica_metadata=1 metadata_csum=1 dram_struct_csum=1 
 	data_csum=1 data_parity=1"
-#    protect=""
+        protect=""
     
     args="measure_timing=0 
 	inplace_data_updates=0 

@@ -10,20 +10,26 @@ export TEST_DIR=$NOVA_CI_PRIMARY_FS
 export SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV
 export SCRATCH_MNT=$NOVA_CI_SECONDARY_FS
 
-echo $XFSTESTS
+#echo $XFSTESTS
 
-(set -v
- cd $XFSTESTS
- echo sudo apt-get install -y xfslibs-dev uuid-dev libtool-bin \
-      e2fsprogs automake gcc libuuid1 quota attr libattr1-dev make \
-      libacl1-dev libaio-dev xfsprogs libgdbm-dev gawk fio dbench \
-      uuid-runtime
- make
- sudo make install
- sudo useradd fsgqa
- sudo useradd 123456-fsgqa
- pwd
- sudo FSTYP=NOVA TEST_DEV=$NOVA_CI_PRIMARY_DEV TEST_DIR=$NOVA_CI_PRIMARY_FS SCRATCH_MNT=$NOVA_CI_SECONDARY_FS SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV bash  ./check $* 2>&1 | tee ${NOVA_CI_LOG_DIR}/xfstests-results.out
- sudo ./to_junit.py < ${NOVA_CI_LOG_DIR}/xfstests-results.out > ${NOVA_CI_LOG_DIR}/xfstests-results.xml
-)
+set -v
+
+cd $XFSTESTS
+if [ ".yes" == ".$REBUILD" ]; then
+    sudo apt-get install -y xfslibs-dev uuid-dev libtool-bin \
+	 e2fsprogs automake gcc libuuid1 quota attr libattr1-dev make \
+	 libacl1-dev libaio-dev xfsprogs libgdbm-dev gawk fio dbench \
+	 uuid-runtime
+    
+    make
+    sudo make install
+    sudo useradd fsgqa
+    sudo useradd 123456-fsgqa
+fi
+
+pwd
+
+sudo FSTYP=NOVA TEST_DEV=$NOVA_CI_PRIMARY_DEV TEST_DIR=$NOVA_CI_PRIMARY_FS SCRATCH_MNT=$NOVA_CI_SECONDARY_FS SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV bash  ./check $* 2>&1 | tee ${NOVA_CI_LOG_DIR}/xfstests-results.out
+sudo ./to_junit.py < ${NOVA_CI_LOG_DIR}/xfstests-results.out > ${NOVA_CI_LOG_DIR}/xfstests-results.xml
+
 
