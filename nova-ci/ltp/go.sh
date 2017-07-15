@@ -6,7 +6,7 @@ LTP=$(clone_or_pull git@github.com:NVSL/NOVA-ltp.git)
 
 cd $LTP
 
-if [ ".yes" == ".$REBUILD" ]; then
+if [ ".yes" == ".$REBUILD" ] || ! [ -e /opt/ltp/runltp ]; then
     make autotools
     ./configure
     make
