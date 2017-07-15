@@ -41,7 +41,7 @@ function get_kernel_version() {
 
 
 function get_host_type() {
-    if ps aux | grep -q google_clock_skew_deamon; then
+    if ps aux | grep -v grep | grep -q google_clock_skew_deamon; then
 	echo gce
     else
 	echo ubuntu
@@ -150,7 +150,7 @@ function update_and_build_nova() {
 	    ls /boot/*
 	    
 	    git pull
-	    build_and_reboot
+	    build_kernel
 	else
 	    git pull
 	    build_nova
@@ -160,7 +160,7 @@ function update_and_build_nova() {
 	git clone git@github.com:NVSL/linux-nova.git
 	if [ -d linux-nova ]; then
 	    cd linux-nova
-	    build_and_reboot
+	    build_kernel
 	else
 	    echo git failed
 	fi
