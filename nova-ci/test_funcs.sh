@@ -6,7 +6,7 @@ function init_tests() {
     R=$PWD/results/$NOVA_CI_DATE
     mkdir -p $R
     export NOVA_CI_LOG_DIR=$PWD/results/latest
-    rm ${NOVA_CI_LOG_DIR}
+    rm -f ${NOVA_CI_LOG_DIR}
     ln -sf $R  ${NOVA_CI_LOG_DIR}  
     
     export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
@@ -28,11 +28,15 @@ function count_cpus() {
 }
 
 function get_kernel_version() {
-    (
-	cd $NOVA_CI_HOME/linux-nova; 
-	make kernelversion | perl -ne 'chop;print'
-	echo -${K_SUFFIX}
-    )
+    if [ -d $NOVA_CI_HOME/linux-nova ]; then
+	(
+	    cd $NOVA_CI_HOME/linux-nova; 
+	    make kernelversion | perl -ne 'chop;print'
+	    echo -${K_SUFFIX}
+	)
+    else
+	echo "unknown"
+    fi
 }
 
 
