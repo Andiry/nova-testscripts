@@ -15,7 +15,7 @@ export SCRATCH_MNT=$NOVA_CI_SECONDARY_FS
 set -v
 
 cd $XFSTESTS
-if [ ".yes" == ".$REBUILD" ]; then
+if [ ".yes" == ".$REBUILD" ] || ! [ -d /var/lib/xfstests ] ; then
     sudo apt-get install -y xfslibs-dev uuid-dev libtool-bin \
 	 e2fsprogs automake gcc libuuid1 quota attr libattr1-dev make \
 	 libacl1-dev libaio-dev xfsprogs libgdbm-dev gawk fio dbench \
