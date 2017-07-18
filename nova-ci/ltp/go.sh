@@ -16,7 +16,7 @@ else
     sudo cp ./runltp /opt/ltp/runltp
     sudo cp ./runtest/* /opt/ltp/runtest/
 fi
-sudo /opt/ltp/runltp -f nova-empty -d $NOVA_CI_PRIMARY_FS $* 2>&1 | tee ${NOVA_CI_LOG_DIR}/nova-ltp-results.out
+sudo /opt/ltp/runltp -f nova -d $NOVA_CI_PRIMARY_FS $* 2>&1 | tee ${NOVA_CI_LOG_DIR}/nova-ltp-results.out
 #./to_junit.py < ${NOVA_CI_LOG_DIR}/nova-ltp-results.out > ${NOVA_CI_LOG_DIR}/nova-ltp-results.xml
 
 
