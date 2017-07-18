@@ -1,14 +1,8 @@
 
+
 function init_tests() {
 
     #set -v
-    export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
-    R=$PWD/results/$NOVA_CI_DATE
-    mkdir -p $R
-    export NOVA_CI_LOG_DIR=$PWD/results/latest
-    rm -f ${NOVA_CI_LOG_DIR}
-    ln -sf $R  ${NOVA_CI_LOG_DIR}  
-    
     export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
     K_SUFFIX=nova
 
@@ -21,6 +15,15 @@ function init_tests() {
 
     export KERNEL_VERSION=$(get_kernel_version)
 
+}
+
+function new_result_dir() {
+    export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
+    R=$PWD/results/$NOVA_CI_DATE
+    mkdir -p $R
+    export NOVA_CI_LOG_DIR=$PWD/results/latest
+    rm -f ${NOVA_CI_LOG_DIR}
+    ln -sf $R  ${NOVA_CI_LOG_DIR}  
 }
 
 function enable_debugging() {
@@ -229,7 +232,7 @@ function reload_nova() {
 
     protect="replica_metadata=1 metadata_csum=1 dram_struct_csum=1 
 	data_csum=1 data_parity=1"
-        protect=""
+    #protect=""
     
     args="measure_timing=0 
 	inplace_data_updates=0 
@@ -292,6 +295,8 @@ function dmesg_to_serial() {
 
 
 function do_run_tests() {
+    new_result_dir
+    
     if [ ".$1" = "." ]; then
 	targets=$(cat ${NOVA_CI_HOME}/tests_to_run.txt)
     else
