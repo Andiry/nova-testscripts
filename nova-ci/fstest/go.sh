@@ -8,9 +8,7 @@ set -v
 
 cd $FSTEST
 
-if [ ".yes" == ".$REBUILD" ]; then
-    make
-fi
+make
 
 pwd
 P=$PWD
