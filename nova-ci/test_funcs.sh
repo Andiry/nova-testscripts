@@ -20,9 +20,33 @@ function init_tests() {
     export NOVA_CI_KERNEL_NAME=$(get_kernel_version)
 
     export KERNEL_VERSION=$(get_kernel_version)
-    echo "module nova +p" | sudo tee /sys/kernel/debug/dynamic_debug/control
+
 }
 
+function enable_debugging() {
+    echo "module nova +p" | sudo tee /sys/kernel/debug/dynamic_debug/control
+}
+function disable_debugging() {
+    echo "module nova -p" | sudo tee /sys/kernel/debug/dynamic_debug/control
+}
+
+function bug_report() {
+    (
+	set -v
+	date
+	hostname
+	uname -a
+	cat /proc/cmdline
+	list_module_args nova
+	df -k | grep nova
+	(
+	    set -v
+	    cd $NOVA_CI_HOME/linux-nova;
+	    git status
+	    git log | head
+	)
+    )
+}
 function count_cpus() {
     cat /proc/cpuinfo  | grep processor | wc -l
 }
