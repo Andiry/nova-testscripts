@@ -17,6 +17,15 @@ function init_tests() {
 
 }
 
+function _git() {
+    for i in $NOVA_CI_HOME/ $NOVA_CI_HOME/linux-nova $NOVA_CI_HOME/{xfstests/xfstests,ltp/NOVA-ltp,fstest/pjd-fstest}; do
+	echo ======================= $i ===========================
+	(cd $i;
+	 git $*
+	)
+    done | less
+}
+
 function new_result_dir() {
     export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
     R=$PWD/results/$NOVA_CI_DATE
