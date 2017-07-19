@@ -32,6 +32,8 @@ function _git() {
     done | less
 }
 
+
+
 function new_result_dir() {
 
     if [ ".$1" != "." ]; then
@@ -100,7 +102,7 @@ function get_host_type() {
 }
 
 function compute_grub_default() {
-
+    init_tests
     menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION| grep -v recovery |grep -v  upstart | cut -f 1 -d :)
     menu=$[menu-2]
     echo "1>$menu"
@@ -134,7 +136,7 @@ function build_kernel () {
 
 function install_kernel() {
     _setup
-    pushd $NOVA_CI_HOME
+
     (
 	set -v;
 	cd $NOVA_CI_HOME;
@@ -194,7 +196,7 @@ function list_module_args() {
 }
 
 function update_and_build_nova() {
-    _setup
+    init_tests
     pushd $NOVA_CI_HOME
     if [ -d linux-nova ]; then
 	cd linux-nova
@@ -332,11 +334,12 @@ function dmesg_to_serial() {
 function _do_run_tests() {
 
     (
-	for i in $*; do
+	for i in $targets; do
 	    (cd $i;
 	     start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
 	     mount_nova
-	     bash -v ./go.sh #$*
+	     bash -v ./go.sh $*
+	     umount_nova
 	     stop_dmesg_record
 	    ) 2>&1 | tee ${NOVA_CI_LOG_DIR}/$i.log
 	done
@@ -354,12 +357,20 @@ function do_run_tests() {
 	shift
     fi
 
-    _do_run_tests $targets
+    _do_run_tests $*
 }
 
 function run_all() {
 
-    cat $NOVA_CI_HOME/configurations.txt  | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates unsafe_metadata wprotect; do
+    init_tests
+    if [ ".$1" = "." ]; then
+	targets=$(cat ${NOVA_CI_HOME}/tests_to_run.txt)
+    else
+	targets=$1
+	shift
+    fi
+    
+    cat $NOVA_CI_HOME/configurations.txt   | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates unsafe_metadata wprotect; do
 
 	config=$(
 	echo -ne  "replica_metadata=$replica_metadata "
@@ -378,7 +389,7 @@ function run_all() {
 
 	reload_nova $config
 
-	_do_run_tests xfstests nova/001
+	_do_run_tests $*
     done
     
 }
