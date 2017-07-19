@@ -84,7 +84,7 @@ function get_kernel_version() {
 
 
 function get_host_type() {
-    if ps aux | grep -v grep | grep -q google_clock_skew_deamon; then
+    if ps aux | grep -v grep | grep -q google_clock_skew_daemon; then
 	echo gce
     else
 	echo ubuntu
