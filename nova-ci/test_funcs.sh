@@ -1,8 +1,14 @@
 
+function _setup() {
+    export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
+    export NOVA_CI_LOG_DIR=$PWD/results/latest
+    if ! [ -d $NOVA_CI_LOG_DIR ]; then
+	new_result_dir
+    fi
+}
 
 function init_tests() {
-
-    #set -v
+    _setup
     export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
     K_SUFFIX=nova
 
@@ -50,6 +56,7 @@ function disable_debugging() {
 }
 
 function bug_report() {
+    _setup
     (
 	set -v
 	date
@@ -71,6 +78,7 @@ function count_cpus() {
 }
 
 function get_kernel_version() {
+    _setup
     if [ -d $NOVA_CI_HOME/linux-nova ]; then
 	(
 	    cd $NOVA_CI_HOME/linux-nova; 
@@ -92,6 +100,7 @@ function get_host_type() {
 }
 
 function compute_grub_default() {
+
     menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION| grep -v recovery |grep -v  upstart | cut -f 1 -d :)
     menu=$[menu-2]
     echo "1>$menu"
@@ -104,12 +113,14 @@ function get_packages() {
 }
 
 function update_kernel () {
+    _setup
     pushd $NOVA_CI_HOME
     git clone git@github.com:NVSL/linux-nova.git || (cd linux-nova; git pull)
     popd
 }
 
 function build_kernel () {
+    _setup
     pushd $NOVA_CI_HOME
     cp ../kernel/$(get_host_type).config ./linux-nova/.config
     sudo rm -rf *.tar.gz *.dsc *.deb *.changes
@@ -122,7 +133,7 @@ function build_kernel () {
 }
 
 function install_kernel() {
-
+    _setup
     pushd $NOVA_CI_HOME
     (
 	set -v;
@@ -140,6 +151,7 @@ function reboot_to_nova() {
 }
 
 function build_nova() {
+    _setup
     pushd $NOVA_CI_HOME
     (set -v;
 	cd linux-nova;
@@ -182,6 +194,7 @@ function list_module_args() {
 }
 
 function update_and_build_nova() {
+    _setup
     pushd $NOVA_CI_HOME
     if [ -d linux-nova ]; then
 	cd linux-nova
@@ -346,7 +359,7 @@ function do_run_tests() {
 
 function run_all() {
 
-    cat $NOVA_CI_HOME/configurations.txt | head -1 | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates unsafe_metadata wprotect; do
+    cat $NOVA_CI_HOME/configurations.txt  | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates unsafe_metadata wprotect; do
 
 	config=$(
 	echo -ne  "replica_metadata=$replica_metadata "
