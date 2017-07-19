@@ -27,8 +27,15 @@ function _git() {
 }
 
 function new_result_dir() {
+
+    if [ ".$1" != "." ]; then
+	suffix="-$1"
+    else
+	suffix=""
+    fi
+    
     export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
-    R=$PWD/results/$NOVA_CI_DATE
+    R=$PWD/results/$NOVA_CI_DATE$suffix
     mkdir -p $R
     export NOVA_CI_LOG_DIR=$PWD/results/latest
     rm -f ${NOVA_CI_LOG_DIR}
@@ -238,21 +245,27 @@ function remount_nova() {
 }
 
 function reload_nova() {
-
-    protect="replica_metadata=1 metadata_csum=1 dram_struct_csum=1 
-	data_csum=1 data_parity=1"
-    #protect=""
     
-    args="measure_timing=0 
-	inplace_data_updates=0 
-	wprotect=0 mmap_cow=1 
-	unsafe_metadata=0 
-	$protect"
+    # local metadata_strong="replica_metadata=1 metadata_csum=1"
+    # local metadata_weak="replica_metadata=0 metadata_csum=0"
 
+    # local data_strong="data_csum=1 data_parity=1"
+    # local data_weak="data_csum=1 data_parity=1"
+
+    # local relaxed_data="inplace_data_updates=1"
+    # local strict_data="inplace_data_updates=0"
+
+    # local relaxed_metadata="unsafe_metadata=1"
+    # local strict_metadata="unsafe_metadata=0"
+
+    # local write_protect="wprotect=1"
+    # local write_unprotect="wprotect=0"
+
+    
     sudo modprobe libcrc32c
     sudo rmmod nova
 
-    sudo modprobe nova $args
+    sudo modprobe nova $1
     
     sleep 1
 
@@ -303,6 +316,21 @@ function dmesg_to_serial() {
 }
 
 
+function _do_run_tests() {
+
+    (
+	for i in $*; do
+	    (cd $i;
+	     start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
+	     mount_nova
+	     bash -v ./go.sh #$*
+	     stop_dmesg_record
+	    ) 2>&1 | tee ${NOVA_CI_LOG_DIR}/$i.log
+	done
+    ) 2>&1 | tee  $NOVA_CI_LOG_DIR/run_test.log
+    
+}
+
 function do_run_tests() {
     new_result_dir
     
@@ -313,14 +341,31 @@ function do_run_tests() {
 	shift
     fi
 
-    (
-	for i in $targets; do
-	    (cd $i;
-	     start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
-	     mount_nova
-	     bash -v ./go.sh $*
-	     stop_dmesg_record
-	    ) 2>&1 | tee ${NOVA_CI_LOG_DIR}/$i.log
-	done
-    ) 2>&1 | tee  $NOVA_CI_LOG_DIR/run_test.log
+    _do_run_tests $targets
+}
+
+function run_all() {
+
+    cat $NOVA_CI_HOME/configurations.txt | head -1 | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates unsafe_metadata wprotect; do
+
+	config=$(
+	echo -ne  "replica_metadata=$replica_metadata "
+	echo -ne  "metadata_csum=$metadata_csum "
+	echo -ne  "data_csum=$data_csum "
+	echo -ne  "data_parity=$data_parity "
+	echo -ne  "inplace_data_updates=$inplace_data_updates "
+	echo -ne  "unsafe_metadata=$unsafe_metadata "
+	echo -ne  "wprotect=$wprotect\n")
+
+	echo =================================================================
+	echo $config
+	echo =================================================================
+
+	new_result_dir $(echo $config |perl -ne 's/ /_/g; s/=/\-/g;print')
+
+	reload_nova $config
+
+	_do_run_tests xfstests nova/001
+    done
+    
 }
