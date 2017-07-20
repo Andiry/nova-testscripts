@@ -1,10 +1,10 @@
 
 function _setup() {
-    export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
-    export NOVA_CI_LOG_DIR=$PWD/results/latest
     if ! [ -d $NOVA_CI_LOG_DIR ]; then
 	new_result_dir
     fi
+    export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
+    export NOVA_CI_LOG_DIR=$PWD/results/latest
 }
 
 function init_tests() {
@@ -153,7 +153,7 @@ function reboot_to_nova() {
 }
 
 function build_nova() {
-    _setup
+    init_tests
     pushd $NOVA_CI_HOME
     (set -v;
 	cd linux-nova;
