@@ -318,8 +318,8 @@ function build_bisection () {
 function start_dmesg_record() {
     stop_dmesg_record >/dev/null 2>&1 
     sudo dmesg -C
-    t=$(sudo bash -c "dmesg --follow > $1 & echo \$!")
-    DMESG_RECORDER=$t
+    sudo bash -c "(dmesg --follow & echo \$! > /tmp/dmesg_pid) | gzip -c > $1.gz &"
+    DMESG_RECORDER=$(< /tmp/dmesg_pid)
 }
 
 function stop_dmesg_record() {
@@ -370,7 +370,7 @@ function run_all() {
 	shift
     fi
     
-    cat $NOVA_CI_HOME/configurations.txt   | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates unsafe_metadata wprotect; do
+    cat $NOVA_CI_HOME/configurations.txt   | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates wprotect; do
 
 	config=$(
 	echo -ne  "replica_metadata=$replica_metadata "
@@ -378,14 +378,14 @@ function run_all() {
 	echo -ne  "data_csum=$data_csum "
 	echo -ne  "data_parity=$data_parity "
 	echo -ne  "inplace_data_updates=$inplace_data_updates "
-	echo -ne  "unsafe_metadata=$unsafe_metadata "
+	#echo -ne  "unsafe_metadata=$unsafe_metadata "
 	echo -ne  "wprotect=$wprotect\n")
 
 	echo =================================================================
 	echo $config
 	echo =================================================================
 
-	new_result_dir $(echo $config |perl -ne 's/ /_/g; s/=/\-/g;print')
+	new_result_dir "${replica_metadata}-${metadata_csum}-${data_csum}-${data_parity}-${inplace_data_updates}-${wprotect}"
 
 	reload_nova $config
 
