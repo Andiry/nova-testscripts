@@ -6,4 +6,3 @@ cp /etc/default/grub etc_default_grub
 
 apt-clone clone nova-dev
 
-cp -a ~/.ssh dot_ssh

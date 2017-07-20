@@ -16,7 +16,7 @@ on GAE:
 2.  apt-clone restore nova-dev.apt-clone.tar.gz # install a bunch of stuff
 3.  cp hn ~/hn # source this to load test_funcs.sh, etc.
 4.  cp bash_profile  ~/.bash_profile # checks for /dev/pmem0 and /dev/pmem1, reboots if not found.
-5.  cp etc_default_grub.gae to /etc/default/grub # add kernel cmdline for 2 pmem devices;
+5.  cp etc_default_grub.gae to /etc/default/grub.d/50-cloudimg-settings.cfg # add kernel cmdline for 2 pmem devices;
 6.  sudo update-grub
 
 cd nova-testscripts/nova-ci
