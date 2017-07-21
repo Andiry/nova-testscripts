@@ -1,6 +1,6 @@
 
 function _setup() {
-    if ! [ -d $NOVA_CI_LOG_DIR ]; then
+    if ! [ -d "$NOVA_CI_LOG_DIR" ]; then
 	new_result_dir
     fi
     export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
@@ -392,4 +392,17 @@ function run_all() {
 	_do_run_tests $*
     done
     
+}
+
+function ngrep() {
+    (
+	cd $NOVA_CI_HOME/linux-nova/fs/nova;
+	find . -name '*.c' -o -name '*.h' | xargs grep --color=always -n -A 2 -B 2  "$*" | less -S -R
+    )
+}
+function lgrep() {
+    (
+	cd $NOVA_CI_HOME/linux-nova;
+	find . -name '*.c' -o -name '*.h' | xargs grep --color=always -n -A 2 -B 2  "$*" | less -S -R
+    )
 }
