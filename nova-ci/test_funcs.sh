@@ -323,7 +323,8 @@ function start_dmesg_record() {
 }
 
 function stop_dmesg_record() {
-    sudo kill $DMESG_RECORDER
+    sudo kill -9 "$DMESG_RECORDER" &
+    true;
 }
 
 function dmesg_to_serial() {
@@ -332,15 +333,15 @@ function dmesg_to_serial() {
 
 
 function _do_run_tests() {
-
+    
     (
 	for i in $targets; do
 	    (cd $i;
-	     start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
+	    # start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
 	     mount_nova
 	     bash -v ./go.sh $*
 	     umount_nova
-	     stop_dmesg_record
+	     #stop_dmesg_record
 	    ) 2>&1 | tee ${NOVA_CI_LOG_DIR}/$i.log
 	done
     ) 2>&1 | tee  $NOVA_CI_LOG_DIR/run_test.log
