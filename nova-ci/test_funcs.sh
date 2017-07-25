@@ -280,7 +280,7 @@ function reload_nova() {
     sudo modprobe libcrc32c
     sudo rmmod nova
 
-    sudo modprobe nova $1
+    sudo modprobe nova $*
     
     sleep 1
 
@@ -337,6 +337,7 @@ function _do_run_tests() {
     (
 	for i in $targets; do
 	    (cd $i;
+	     bug_report
 	    # start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
 	     mount_nova
 	     bash -v ./go.sh $*
@@ -371,10 +372,10 @@ function run_all() {
 	shift
     fi
     
-    cat $NOVA_CI_HOME/configurations.txt   | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates wprotect; do
+    cat $NOVA_CI_HOME/configurations.txt   | while read  metadata_csum data_csum data_parity inplace_data_updates wprotect; do
 
 	config=$(
-	echo -ne  "replica_metadata=$replica_metadata "
+	#echo -ne  "replica_metadata=$replica_metadata "
 	echo -ne  "metadata_csum=$metadata_csum "
 	echo -ne  "data_csum=$data_csum "
 	echo -ne  "data_parity=$data_parity "
@@ -386,7 +387,7 @@ function run_all() {
 	echo $config
 	echo =================================================================
 
-	new_result_dir "${replica_metadata}-${metadata_csum}-${data_csum}-${data_parity}-${inplace_data_updates}-${wprotect}"
+	new_result_dir "${metadata_csum}-${data_csum}-${data_parity}-${inplace_data_updates}-${wprotect}"
 
 	reload_nova $config
 

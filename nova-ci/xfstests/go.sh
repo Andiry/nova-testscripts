@@ -28,6 +28,7 @@ if [ ".yes" == ".$REBUILD" ] || ! [ -d /var/lib/xfstests ] ; then
 fi
 
 pwd
+echo ${NOVA_CI_LOG_DIR}/xfstests-results.out
 
 sudo FSTYP=NOVA TEST_DEV=$NOVA_CI_PRIMARY_DEV TEST_DIR=$NOVA_CI_PRIMARY_FS SCRATCH_MNT=$NOVA_CI_SECONDARY_FS SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV bash  ./check $* 2>&1 | tee ${NOVA_CI_LOG_DIR}/xfstests-results.out
 sudo ./to_junit.py < ${NOVA_CI_LOG_DIR}/xfstests-results.out > ${NOVA_CI_LOG_DIR}/xfstests-results.xml
