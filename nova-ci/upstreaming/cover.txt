@@ -2,24 +2,29 @@ From: %(sender)s
 Subject: [%(prefix)s%(pspace)s%(kind)s%(vspace)s%(version)s%(nspace)s%(number)s] NOVA: a new file system for persistent memory
 
 This is an RFC patch series that impements NOVA (NOn-Volatile memory
-Accelerated file system), a new file system built for PMEM.  It is relatived to
-Linux 4.12.
+Accelerated file system), a new file system built for PMEM.
 
-Nova is stable enough to run complex applications.  This RFC is intended to
-spread the word about NOVA and gather feedback to guide its development toward
-eventual inclusion upstream.
-
-Why is NOVA?
-============
 NOVA's goal is to provide a high-performance, full-featured, production-ready
 file system tailored for byte-addressable non-volatile memories (e.g., NVDIMMs
 and Intel's soon-to-be-released 3DXpoint DIMMs).  It combines design elements
 from many other file systems to provide a combination of high-performance,
-strong consistency guarantees, and comprehensive data protection.  NOVA support
-DAX-style mmap and making DAX performs well is a first-order priority in NOVA's
-design.  NOVA was developed by the [Non-Volatile Systems Laboratory][NVSL] in
-the [Computer Science and Engineering Department][CSE] at the [University of
-California, San Diego][UCSD].
+strong consistency guarantees, and comprehensive data protection.  NOVA supports
+DAX-style mmap, and making DAX perform well is a first-order priority in NOVA's
+design.
+
+NOVA was developed at the Non-Volatile Systems Laboratory in the Computer
+Science and Engineering Department at the University of California, San Diego.
+Its primary authors are Andiry Xu <jix024@eng.ucsd.edu>, Lu Zhang
+<luzh@eng.ucsd.edu>, and Steven Swanson <swanson@eng.ucsd.edu>.
+
+NOVA is stable enough to run complex applications, but there is substantial
+work left to do.  This RFC is intended to gather feedback to guide its
+development toward eventual inclusion upstream.
+
+The patches are relative Linux 4.12.
+
+Overview
+========
 
 NOVA is primarily a log-structured file system, but rather than maintain a
 single global log for the entire file system, it maintains separate logs for
@@ -31,28 +36,29 @@ point to data pages they modify.  File modification uses copy-on-write (COW) to
 provide atomic file updates.
 
 For file operations that involve multiple inodes, NOVA use small, fixed-sized
-redo logs to atomically append log entries to the logs of the inodes involned.
+redo logs to atomically append log entries to the logs of the inodes involved.
 
-This structure keeps logs small and make garbage collection very fast.  It also
+This structure keeps logs small and makes garbage collection very fast.  It also
 enables enormous parallelism during recovery from an unclean unmount, since
 threads can scan logs in parallel.
 
 NOVA replicates and checksums all metadata structures and protects file data
 with RAID-4-style parity.  It supports checkpoints to facilitate backups.
 
-Documentation/filesystems/nova.txt contains some lower-level implementation and
+Documentation/filesystems/NOVA.txt contains some lower-level implementation and
 usage information.  A more thorough discussion of NOVA's goals and design is
 avaialable in these two papers:
 
 **NOVA: A Log-structured File system for Hybrid Volatile/Non-volatile Main Memories** 
-[PDF](http://cseweb.ucsd.edu/~swanson/papers/FAST2016NOVA.pdf)
+http://cseweb.ucsd.edu/~swanson/papers/FAST2016NOVA.pdf
 *Jian Xu and Steven Swanson*
 Published in [FAST 2016][FAST2016]
 
 **Hardening the NOVA File System**
-[PDF](http://cseweb.ucsd.edu/~swanson/papers/TechReport2017HardenedNOVA.pdf)
+http://cseweb.ucsd.edu/~swanson/papers/TechReport2017HardenedNOVA.pdf
 UCSD-CSE Techreport CS2017-1018
 *Jian Xu, Lu Zhang, Amirsaman Memaripour, Akshatha Gangadharaiah, Amit Borase, Tamires Brito Da Silva, Andy Rudoff, Steven Swanson*
+
 
 ---
 

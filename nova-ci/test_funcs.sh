@@ -343,7 +343,7 @@ function reload_nova() {
     sudo modprobe libcrc32c
     sudo rmmod nova
 
-    sudo modprobe nova $1 nova_dbgmask=0xfffffff
+    sudo modprobe nova $1 #nova_dbgmask=0xfffffff
     
     sleep 1
 
@@ -468,4 +468,14 @@ function lgrep() {
 	cd $NOVA_CI_HOME/linux-nova;
 	find . -name '*.c' -o -name '*.h' | grep -v debian | xargs grep --color=always -n -A 2 -B 2  "$*" | less -S -R
     )
+}
+
+function auto_checkpatch {
+    ../../scripts/checkpatch.pl -f $1 --fix
+    diff $1 $1.EXPERIMENTAL-checkpatch-fixes | less
+    echo ok?
+    read yn
+    if [ "$yn." = "y." ]; then
+	../../scripts/checkpatch.pl -f $1 --fix-inplace
+    fi
 }

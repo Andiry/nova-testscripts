@@ -1,8 +1,10 @@
-
 export VISUAL=emacs
 
 function _mail() {
-    stg mail  --auto --to="Steven Swanson <steven.swanson@gmail.com>" --all --kind RFC --smtp-server="`which esmtp` -t -i" -E -e -c ../upstreaming/cover.txt
+    # --cc=dan.j.williams@intel.com --to=linux-kernel@vger.kernel.org --to=linux-kernel@vger.kernel.org --to=linux-nvdimm@lists.01.org
+    # --cc=andy.rudoff@intel.com --cc=coughlan@redhat.com
+
+    stg mail  --auto --cc="Steven Swanson <steven.swanson@gmail.com>" -s 0 --all --kind RFC --smtp-server="`which esmtp` -t -i" --edit-cover -c ../upstreaming/cover.txt $*
 }
 
 function _patch() {
@@ -28,7 +30,7 @@ function _label() {
 
 function _reset() {
 
-    stg delete $(_do_op _label)
+    stg delete $(stg series --noprefix)
     
 }
 
