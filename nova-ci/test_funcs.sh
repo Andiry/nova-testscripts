@@ -128,7 +128,8 @@ function build_kernel () {
     sudo rm -rf *.tar.gz *.dsc *.deb *.changes
     (
 	set -v;
-	cd linux-nova; 
+	cd linux-nova;
+	yes '' | make oldconfig
 	make -j$[$(count_cpus) + 1] deb-pkg LOCALVERSION=-${K_SUFFIX};
 	) 2>&1 | tee $R/kernel_build.log 
     popd
@@ -343,7 +344,9 @@ function reload_nova() {
     sudo modprobe libcrc32c
     sudo rmmod nova
 
+
     sudo modprobe nova $1 #nova_dbgmask=0xfffffff
+
     
     sleep 1
 
@@ -381,12 +384,13 @@ function build_bisection () {
 function start_dmesg_record() {
     stop_dmesg_record >/dev/null 2>&1 
     sudo dmesg -C
-    t=$(sudo bash -c "dmesg --follow > $1 & echo \$!")
-    DMESG_RECORDER=$t
+    sudo bash -c "(dmesg --follow & echo \$! > /tmp/dmesg_pid) | gzip -c > $1.gz &"
+    DMESG_RECORDER=$(< /tmp/dmesg_pid)
 }
 
 function stop_dmesg_record() {
-    sudo kill $DMESG_RECORDER
+    sudo kill -9 "$DMESG_RECORDER" &
+    true;
 }
 
 function dmesg_to_serial() {
@@ -395,15 +399,16 @@ function dmesg_to_serial() {
 
 
 function _do_run_tests() {
-
+    
     (
 	for i in $targets; do
 	    (cd $i;
-	     start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
+	     bug_report
+	    # start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
 	     mount_nova
 	     bash -v ./go.sh $*
 	     umount_nova
-	     stop_dmesg_record
+	     #stop_dmesg_record
 	    ) 2>&1 | tee ${NOVA_CI_LOG_DIR}/$i.log
 	done
     ) 2>&1 | tee  $NOVA_CI_LOG_DIR/run_test.log
@@ -433,22 +438,22 @@ function run_all() {
 	shift
     fi
     
-    cat $NOVA_CI_HOME/configurations.txt   | while read replica_metadata metadata_csum data_csum data_parity inplace_data_updates unsafe_metadata wprotect; do
+    cat $NOVA_CI_HOME/configurations.txt   | while read  metadata_csum data_csum data_parity inplace_data_updates wprotect; do
 
 	config=$(
-	echo -ne  "replica_metadata=$replica_metadata "
+	#echo -ne  "replica_metadata=$replica_metadata "
 	echo -ne  "metadata_csum=$metadata_csum "
 	echo -ne  "data_csum=$data_csum "
 	echo -ne  "data_parity=$data_parity "
 	echo -ne  "inplace_data_updates=$inplace_data_updates "
-	echo -ne  "unsafe_metadata=$unsafe_metadata "
+	#echo -ne  "unsafe_metadata=$unsafe_metadata "
 	echo -ne  "wprotect=$wprotect\n")
 
 	echo =================================================================
 	echo $config
 	echo =================================================================
 
-	new_result_dir $(echo $config |perl -ne 's/ /_/g; s/=/\-/g;print')
+	new_result_dir "${metadata_csum}-${data_csum}-${data_parity}-${inplace_data_updates}-${wprotect}"
 
 	reload_nova $config
 
@@ -478,4 +483,10 @@ function auto_checkpatch {
     if [ "$yn." = "y." ]; then
 	../../scripts/checkpatch.pl -f $1 --fix-inplace
     fi
+}
+function check_pmem() {
+    if  ! [ -e /dev/pmem0 -a -e /dev/pmem1 ]; then
+	echo missing
+    else
+	echo ok
 }
