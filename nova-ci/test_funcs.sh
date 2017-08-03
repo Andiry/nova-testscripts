@@ -128,7 +128,8 @@ function build_kernel () {
     sudo rm -rf *.tar.gz *.dsc *.deb *.changes
     (
 	set -v;
-	cd linux-nova; 
+	cd linux-nova;
+	yes '' | make oldconfig
 	make -j$[$(count_cpus) + 1] deb-pkg LOCALVERSION=-${K_SUFFIX};
 	) 2>&1 | tee $R/kernel_build.log 
     popd
@@ -407,4 +408,12 @@ function lgrep() {
 	cd $NOVA_CI_HOME/linux-nova;
 	find . -name '*.c' -o -name '*.h' | xargs grep --color=always -n -A 2 -B 2  "$*" | less -S -R
     )
+}
+
+function check_pmem() {
+    if  ! [ -e /dev/pmem0 -a -e /dev/pmem1 ]; then
+	echo missing
+    else
+	echo ok
+    fi
 }
