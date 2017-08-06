@@ -2,7 +2,7 @@
 
 . $NOVA_CI_HOME/test_util.sh
 
-export XFSTESTS=$(clone_or_pull git@github.com:NVSL/xfstests.git hacked-for-gce)
+export XFSTESTS=$(clone_or_pull https://github.com/NVSL/xfstests.git)
 
 export FSTYP=NOVA
 export TEST_DEV=$NOVA_CI_PRIMARY_DEV
@@ -10,7 +10,6 @@ export TEST_DIR=$NOVA_CI_PRIMARY_FS
 export SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV
 export SCRATCH_MNT=$NOVA_CI_SECONDARY_FS
 
-#echo $XFSTESTS
 
 set -v
 
