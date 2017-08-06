@@ -52,7 +52,8 @@ function install_kernel() {
     KERNEL_VERSION=$(cd linux-nova; get_kernel_version)
     sudo dpkg -i linux-image-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb
     sudo dpkg -i linux-headers-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb
-    sudo dpkg -i linux-image-${KERNEL_VERSION}-dbg_${KERNEL_VERSION}-?_amd64.deb    sudo update-grub
+    sudo dpkg -i linux-image-${KERNEL_VERSION}-dbg_${KERNEL_VERSION}-?_amd64.deb
+    sudo update-grub
 }
 
 function compute_grub_default() {
