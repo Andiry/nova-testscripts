@@ -7,16 +7,16 @@ function clone_or_pull() {
     if [ -d $dir ]; then
 	(
 	    cd $dir
-	    git fetch > /dev/null 2>&1
-	    git pull > /dev/null  2>&1
+	    git fetch 1>&2
+	    git pull 1>&2
 	)
     else
-	git clone $repo  >/dev/null  2>&1
+	git clone $repo  1>&2
     fi
 
     if [ ".$2" != "." ]; then
 	cd $dir
-	git checkout -b $2 >/dev/null 2>&1 
+	git checkout -b $2 1>&2
     fi
     
     echo $dir

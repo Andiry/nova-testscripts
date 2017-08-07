@@ -484,9 +484,4 @@ function auto_checkpatch {
 	../../scripts/checkpatch.pl -f $1 --fix-inplace
     fi
 }
-function check_pmem() {
-    if  ! [ -e /dev/pmem0 -a -e /dev/pmem1 ]; then
-	echo missing
-    else
-	echo ok
-}
+
