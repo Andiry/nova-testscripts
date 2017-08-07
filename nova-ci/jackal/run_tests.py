@@ -515,8 +515,8 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--prompt", default=None, help="prompt to watch for")
-    parser.add_argument("--tests", default=[], nargs="*", help="which tests to run")
-    parser.add_argument("--configs", default=[], nargs="*", help="which configurations to run")
+    parser.add_argument("--tests", default=None, nargs="*", help="which tests to run")
+    parser.add_argument("--configs", default=None, nargs="*", help="which configurations to run")
     parser.add_argument("-v", default=False, action="store_true", help="be verbose")
     parser.add_argument("--runner", default="fixed", help="Run tests on GCE")
     parser.add_argument("--host", help="Runner to run on (for 'fixed')")
@@ -548,17 +548,43 @@ def main():
     if args.v:
         log.info("Being verbose")
         out=Tee([sys.stdout, out])
-        
-    nova_configs = [NovaConfig(name="baseline1",
+
+    def build_configs():
+        config="""
+        data_csum={data_csum}
+        data_parity={data_parity}
+        dram_struct_csum={dram_struct_csum}
+        inplace_data_updates={inplace_data_updates}
+        metadata_csum={metadata_csum}
+        wprotect={wprotect}
+        """
+        r = []
+        for data_csum in [0,1]:
+            for data_parity in [0,1]:
+                for dram_struct_csum in [0,1]:
+                    for inplace_data_updates in [0,1]:
+                        for metadata_csum in [0,1]:
+                            for wprotect in [0,1]:
+                                r.append(NovaConfig(name="baseline-{data_csum}-{data_parity}-{dram_struct_csum}-{inplace_data_updates}-{metadata_csum}-{wprotect}".format(**locals()),
+                                                    kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
+                                                    kernel_config_file="gce.v4.12.config",
+                                                    module_args=config.format(**locals())))
+
+        return r
+
+    all_configurations = build_configs()
+    nova_configs = [NovaConfig(name="baseline",
                                kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
                                kernel_config_file="gce.v4.12.config",
                                module_args=""),
                     NovaConfig(name="baseline2",
-                               
                                kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
                                kernel_config_file="gce.v4.12.config",
-                               module_args="wprotect=1")]
+                               module_args="wprotect=1")] + all_configurations
 
+
+    print [x.name for x in nova_configs]
+    
     tests = [TestConfig(name="xfstests1",
                         tests=["generic/092", "generic/080"],
                         timeout=100,
@@ -579,22 +605,29 @@ def main():
         runner = GCERunner(PROMPT, args=args, prefix=args.instance_prefix)
     else:
         raise Exception("Illegal runner: {}".format(args.runner))
-
+    
     if args.tests == []:
-        args.tests = [x.name for x in tests]
-    
-    if args.configs == []:
-        args.configs = [x.name for x in nova_configs]
-    
+        args.tests = ["xfstests-all"]
+        
+    config_aliases = dict(all=[x.name for x in all_configurations]) # Run all option combinations
+    config_aliases.update({x.name: [x.name] for x in nova_configs}) # an identity alias for each config
+    config_aliases.update({None:["baseline"]}) # the default
+    print config_aliases
+
+    config_to_run_names = []
+    for i in args.configs:
+        config_to_run_names += config_aliases[i]
+    config_to_run_names = sorted(list(set(config_to_run_names)))
+
     test_map = {x.name: x for x in tests}
     nconf_map = {x.name: x for x in nova_configs}
 
-    log.info("Configs : " + " ".join(args.configs))
-    log.info("tests : " + " ".join(args.tests))
-
-    nconfs_to_run = [nconf_map[i] for i in args.configs]
+    nconfs_to_run = [nconf_map[i] for i in config_to_run_names]
     tests_to_run = [test_map[i] for i in args.tests]
-    
+
+    log.info("Configs : " + " ".join([x.name for x in nconfs_to_run]))
+    log.info("tests : " + " ".join([x.name for x in tests_to_run]))
+    sys.exit(1)
     for nconf in nconfs_to_run:
         try:
             runner.prepare_host_config(nconf, reuse=args.reuse_instances) # update, build, and install the nova kernel
