@@ -92,7 +92,7 @@ class Runner(object):
 
     def get_old_host_config(self, name):
         return False
-        r = self.gcloud("gcloud -q --format json compute instances list")
+        r = self.gcloud("compute instances list")
         
     def prepare_host_config(self, nconf, reboot=False, start_instance=True, reuse=False):
         log.info("prepare_host_config")
@@ -218,13 +218,18 @@ class GCERunner(Runner):
 
         self.image = "nova-ci-image-v5"
         self.hosttype = "n1-highmem-8"
+        self.gce_zone = "us-west1-c"
         
     def get_hostname(self):
         return self.hostname
 
     def gcloud(self, cmd):
-        log.info(cmd)
-        proc = subprocess.Popen(cmd.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        full_cmd = ("gcloud -q --format=json".
+                    format(self.gce_zone).split(" ") +
+                    cmd.split(" "))
+        log.info(full_cmd)
+        proc = subprocess.Popen(full_cmd,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = proc.communicate()
         log.debug(err)
         log.debug(out)
@@ -235,7 +240,7 @@ class GCERunner(Runner):
 
     def get_old_host_config(self, name):
         log.info("get_old_host_config: {}".format(name))
-        r = self.gcloud("gcloud -q --format json compute instances list")
+        r = self.gcloud("compute instances list")
         for host in r:
             if host["name"] == name:
                 log.info("get_old_host_config: found candidate...")
@@ -253,13 +258,13 @@ class GCERunner(Runner):
             self.cleanup(name)
         except:
             pass
-        self.instance_desc = self.gcloud("gcloud --format json compute instances create --image {image} --machine-type {m_type} {name}".format(name=name, image=self.image, m_type=self.hosttype))
+        self.instance_desc = self.gcloud("compute instances create --image {image} --machine-type {m_type} {name}".format(name=name, image=self.image, m_type=self.hosttype))
         self.instance_name = self.instance_desc[0]["name"]
         self.hostname = self.instance_desc[0]["networkInterfaces"][0]["accessConfigs"][0]["natIP"]
 
     def shutdown(self):
         for i in range(0,2):
-            r = self.gcloud("gcloud -q --format json compute instances stop {name}".format(name=self.instance_name))
+            r = self.gcloud("compute instances stop {name}".format(name=self.instance_name))
             if r[0]["status"] == "TERMINATED":
                 return
         raise Exception("Couldn't terminate instance {}".format(self.instance_name))
@@ -267,7 +272,7 @@ class GCERunner(Runner):
     def delete_by_name(self, name):
         log.info("Deleting instance {}".format(name))
         for i in range(0,2):
-            r = self.gcloud("gcloud -q --format json compute instances delete {name}".format(name=name))
+            r = self.gcloud("compute instances delete {name}".format(name=name))
             if r == []:
                 return
         raise Exception("Couldn't terminate instance {}".format(name))
@@ -277,13 +282,18 @@ class GCERunner(Runner):
 
         
     def cleanup(self, name):
-        """ Cleanup after old runners.  Hopefully, there aren't any """
+        """ Cleanup after old runners... """
         log.info("cleaning up {}".format(name))
-        try:
-            self.delete_by_name(name)
-        except Exception as e:
-            log.info("Couldn't cleanup {}: {}".format(name, e))
-            
+        r = self.gcloud("compute instances list")
+        if name in [x["name"] for x in r]:
+            log.info("Found one...deleting".format(name))
+            try:
+                self.delete_by_name(name)
+            except Exception as e:
+                log.info("Couldn't cleanup {}: {}".format(name, e))
+        else:
+            log.info("Nothing to clean.".format(name))
+                    
         
             
 class TimeoutException(Exception):
@@ -507,7 +517,7 @@ def main():
     args = parser.parse_args()
 
     if args.prompt is None:
-        PROMPT = "swanson@".format(args.host)
+        PROMPT = "{}@".format(os.getusername(), args.host)
     else:
         PROMPT = args.prompt
         
