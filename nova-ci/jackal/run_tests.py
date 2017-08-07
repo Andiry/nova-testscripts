@@ -76,7 +76,8 @@ class Runner(object):
     def update_nova_ci(self):
         log.info("update_nova_ci")
         self.open_shell(load_nova_ci=False)
-        self.simple_command("cd nova-testscripts/; git pull")
+        self.simple_command("[ -d nova-testscripts/ ] || git clone https://github.com/NVSL/nova-testscripts.git")
+        self.simple_command("cd nova-testscripts; git pull")
         self.exit()
 
     def update_kernel(self, nconf):
