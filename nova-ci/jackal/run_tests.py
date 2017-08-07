@@ -10,6 +10,7 @@ import subprocess
 import fcntl
 import os
 import json
+import pwd
 
 
 reboot_timeout=180 # seems to take about a minute, usually.
@@ -517,7 +518,7 @@ def main():
     args = parser.parse_args()
 
     if args.prompt is None:
-        PROMPT = "{}@".format(os.getusername(), args.host)
+        PROMPT = "{}@".format(pwd.getpwuid(os.getuid()).pw_name, args.host)
     else:
         PROMPT = args.prompt
         
