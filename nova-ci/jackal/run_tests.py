@@ -583,7 +583,7 @@ def main():
                                module_args="wprotect=1")] + all_configurations
 
 
-    print [x.name for x in nova_configs]
+    #print [x.name for x in nova_configs]
     
     tests = [TestConfig(name="xfstests1",
                         tests=["generic/092", "generic/080"],
