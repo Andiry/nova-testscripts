@@ -1,7 +1,7 @@
 export VISUAL=emacs
 
 function _mail() {
-    # --cc=dan.j.williams@intel.com --to=linux-kernel@vger.kernel.org --to=linux-kernel@vger.kernel.org --to=linux-nvdimm@lists.01.org
+    # --cc=dan.j.williams@intel.com --to=linux-fsdevel@vger.kernel.org --to=linux-kernel@vger.kernel.org --to=linux-nvdimm@lists.01.org
     # --cc=andy.rudoff@intel.com --cc=coughlan@redhat.com
 
     stg mail  --auto --cc="Steven Swanson <steven.swanson@gmail.com>" -s 0 --all --kind RFC --smtp-server="`which esmtp` -t -i" --edit-cover -c ../upstreaming/cover.txt $*
@@ -13,7 +13,8 @@ function _patch() {
     stg new "$label" -m "NOVA: $*" --sign
 
     for file in $(cat); do
-	(cd ../linux-nova; git diff v4.12 master $file) | patch -up1
+	(git diff v4.12 master -- $file) | patch -up1
+#	(cd ../linux-nova; git diff v4.12 master $file) | patch -up1
 	git add $file
     done
     stg refresh
@@ -62,6 +63,7 @@ Documentation/filesystems/nova.txt
 MAINTAINERS
 README.md
 EOF
+
 
     # Super block and layout
     $op super "Superblock and fs layout
@@ -175,7 +177,6 @@ another.
 fs/nova/balloc.c
 fs/nova/balloc.h
 EOF
-
     
     # Inode
     $op inode "Inode operations and structures
@@ -308,7 +309,7 @@ Then, it estimates how many pages the logs valid entries would fill.  If this
 is less than half the number of pages in the log, the second GC phase copies
 the valid entries to new pages.
 
-For example:
+For example (V=valid; I=invalid):
 
 +---+          +---+	        +---+
 | I |	       | I |  	      	| V |
@@ -430,6 +431,12 @@ PMEM device as read-only and then disabling _all_ write protection by clearing
 the WP bit the CR0 control register when Nova needs to perform a write.  The
 wprotect mount-time option controls this behavior.
 
+To map the PMEM device as read-only, we have added a readonly module command
+line option to nd_pmem.  There is probably a better approach to achieving this
+goal. 
+
+The changes to nd_pmem are included in a later patch in this series.
+
 " <<EOF
 fs/nova/checksum.c
 fs/nova/parity.c
@@ -499,6 +506,52 @@ to the snapshot's epoch_id, it means the log entry and/or the associated data
 blocks are now dead.
 
 
+
+Snapshots and DAX
+-----------------
+
+Taking consistent snapshots while applications are modifying files using
+DAX-style mmap requires NOVA to reckon with the order in which stores to NVMM
+become persistent (i.e., reach physical NVMM so they will survive a system
+failure).  These applications rely on the processor's ``memory persistence
+model'' [http://dl.acm.org/citation.cfm?id=2665671.2665712] to make guarantees
+about when and in what order stores become persistent.  These guarantees allow
+the application to restore their data to a consistent state during recovery
+from a system failure.
+
+From the application's perspective, reading a snapshot is equivalent to
+recovering from a system failure.  In both cases, the contents of the
+memory-mapped file reflect its state at a moment when application operations
+might be in-flight and when the application had no chance to shut down cleanly.
+
+A naive approach to checkpointing mmap()'d files in NOVA would simply mark each
+of the read/write mapped pages as read-only and then do copy-on-write when a
+store occurs to preserve the old pages as part of the snapshot.
+
+However, this approach can leave the snapshot in an inconsistent state:
+Setting the page to read-only captures its contents for the
+snapshot, and the kernel requires NOVA to set the pages as read-only
+one at a time.  So, if the order in which NOVA marks pages as read-only
+is incompatible with ordering that the application requires, the snapshot will
+contain an inconsistent version of the file.
+
+To resolve this problem, when NOVA starts marking pages as read-only, it blocks
+page faults to the read-only mmap()'d pages until it has marked all the pages
+read-only and finished taking the snapshot.
+
+More detail is available in the technical report referenced at the top of this
+document.
+
+We have implemented this functionality in NOVA by adding the 'original_write'
+flag to struct vm_area_struct that tracks whether the vm_area_struct is created
+with write permission, but has been marked read-only in the course of taking a
+snapshot.  We have also added a 'dax_cow' operation to struct
+vm_operations_struct that the page fault handler runs when applications write
+to a page with original_write = 1.  NOVA's dax_cow operation
+(nova_restore_page_write()) performs the COW, maps the page to a new physical
+page and allows writing.
+
+
 Saving Snapshot State
 ---------------------
 
@@ -559,17 +612,10 @@ Superblock
 " <<EOF
 fs/nova/snapshot.c
 fs/nova/snapshot.h
-arch/x86/include/asm/io.h
 arch/x86/mm/fault.c
-arch/x86/mm/ioremap.c
-include/linux/io.h
 include/linux/mm.h
 include/linux/mm_types.h
-kernel/memremap.c
-mm/memory.c
-mm/mmap.c
 mm/mprotect.c
-drivers/nvdimm/pmem.c
 EOF
 
     # Recovery
@@ -637,7 +683,19 @@ fs/nova/ioctl.c
 fs/nova/sysfs.c
 EOF
 
+     $op pmemro "Read-only pmem devices
 
+Add (and implement) a module command line option to nd_pmem to support read-only pmem devices.
+" <<EOF
+arch/x86/include/asm/io.h
+arch/x86/mm/ioremap.c
+include/linux/io.h
+kernel/memremap.c
+mm/memory.c
+mm/mmap.c
+drivers/nvdimm/pmem.c
+EOF
+     
     # Stats and Performance Measurement
     $op perf "Performance measurement" <<EOF
 fs/nova/perf.c
@@ -653,4 +711,5 @@ fs/Makefile
 fs/nova/Kconfig
 fs/nova/Makefile
 EOF
+
 }
