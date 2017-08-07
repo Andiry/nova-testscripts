@@ -627,7 +627,7 @@ def main():
 
     log.info("Configs : " + " ".join([x.name for x in nconfs_to_run]))
     log.info("tests : " + " ".join([x.name for x in tests_to_run]))
-    sys.exit(1)
+
     for nconf in nconfs_to_run:
         try:
             runner.prepare_host_config(nconf, reuse=args.reuse_instances) # update, build, and install the nova kernel
