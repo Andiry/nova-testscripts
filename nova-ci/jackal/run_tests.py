@@ -296,17 +296,18 @@ class GCERunner(Runner):
 
         
     def cleanup(self, name):
+        instance_name = "{}{}".format(self.prefix, name)
         """ Cleanup after old runners... """
-        log.info("cleaning up {}".format(name))
+        log.info("cleaning up {}".format(instance_name))
         r = self.gcloud("compute instances list")
         if name in [x["name"] for x in r]:
-            log.info("Found one...deleting".format(name))
+            log.info("Found one...deleting")
             try:
-                self.delete_by_name(name)
+                self.delete_by_name(instance_name)
             except Exception as e:
-                log.info("Couldn't cleanup {}: {}".format(name, e))
+                log.info("Couldn't cleanup {}: {}".format(instance_name, e))
         else:
-            log.info("Nothing to clean.".format(name))
+            log.info("Nothing to clean.")
                     
         
             
