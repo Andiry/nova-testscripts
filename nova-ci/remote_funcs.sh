@@ -106,6 +106,6 @@ function run-test() {
     shift
     (cd $dir;
      echo ./go.sh $*
-     ./go.sh $*
+     REBUILD=yes ./go.sh $*
     )
 }
