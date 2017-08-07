@@ -83,6 +83,11 @@ function load_nova() {
     sleep 1
 }
 
+function mount_nova() {
+    mount_one $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
+    mount_one $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
+}
+
 function list_module_args() {
     if [ "." = "$1." ]; then
 	modules=$(cat /proc/modules | cut -f 1 -d " ")
