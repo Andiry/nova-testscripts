@@ -82,20 +82,25 @@ class Runner(object):
         cmd = "update_kernel {} {} {}".format(nconf.kernel_config_file,
                                                        nconf.kernel_repo[0],
                                                        nconf.kernel_repo[1])
-        self.shell_cmd(cmd, timeout=2*60)
+        self.shell_cmd(cmd, timeout=10*60)
         
     def build_kernel(self):
         self.shell_cmd("build_kernel", timeout=30*60)
         
     def install_kernel(self):
         self.shell_cmd("install_kernel", timeout=5*60)
+
+    def get_old_host_config(self, name):
+        return False
+        r = self.gcloud("gcloud -q --format json compute instances list")
         
-    def prepare_host_config(self, nconf, reboot=False, start_instance=True):
+    def prepare_host_config(self, nconf, reboot=False, start_instance=True, reuse=False):
         log.info("prepare_host_config")
-        if start_instance:
+#        if start_instance:
+        if not (reuse and self.get_old_host_config(nconf.name)):
             self.create(nconf.name)
-        elif reboot:
-            self.reboot_to_nova()
+#        elif reboot:
+#            self.reboot_to_nova()
             
         self.update_nova_ci()
         if not self.args.no_update_kernel:
@@ -114,6 +119,11 @@ class Runner(object):
         log.info("load_nova")
         self.shell_cmd("load_nova {}".format(nconf.module_args))
         self.shell_cmd("list_module_args nova")
+
+    def mount_nova(self, nconf):
+        log.info("mount_nova")
+        self.shell_cmd("mount_nova".format(nconf.module_args))
+        self.shell_cmd("df")
         
     def reset_host(self, nconf):
         if not self.soft_reboot():
@@ -206,6 +216,9 @@ class GCERunner(Runner):
         self.instance_desc = None
         self.instance_name = None
 
+        self.image = "nova-ci-image-v5"
+        self.hosttype = "n1-highmem-8"
+        
     def get_hostname(self):
         return self.hostname
 
@@ -219,14 +232,28 @@ class GCERunner(Runner):
             raise Exception("'{}' failed (returncode={}): {}".format(cmd,proc.returncode)) 
         r = json.loads(out)
         return r
-        
+
+    def get_old_host_config(self, name):
+        log.info("get_old_host_config: {}".format(name))
+        r = self.gcloud("gcloud -q --format json compute instances list")
+        for host in r:
+            if host["name"] == name:
+                log.info("get_old_host_config: found candidate...")
+                if host["status"] != "RUNNING":
+                    #self.gcloud("gcloud -q --format json compute instances 
+                    self.instance_desc = [host]
+                    self.instance_name = self.instance_desc[0]["name"]
+                    self.hostname = self.instance_desc[0]["networkInterfaces"][0]["accessConfigs"][0]["natIP"]
+
+                return True
+        return False
         
     def create(self, name):
         try:
             self.cleanup(name)
         except:
             pass
-        self.instance_desc = self.gcloud("gcloud --format json compute instances create --image {image} --machine-type {m_type} {name}".format(name=name, image="nova-ci-image-v3", m_type="n1-highmem-8"))
+        self.instance_desc = self.gcloud("gcloud --format json compute instances create --image {image} --machine-type {m_type} {name}".format(name=name, image=self.image, m_type=self.hosttype))
         self.instance_name = self.instance_desc[0]["name"]
         self.hostname = self.instance_desc[0]["networkInterfaces"][0]["accessConfigs"][0]["natIP"]
 
@@ -464,10 +491,13 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--prompt", default=None, help="prompt to watch for")
-    parser.add_argument("--tests", default=None, help="which tests to run")
+    parser.add_argument("--tests", default=[], nargs="*", help="which tests to run")
+    parser.add_argument("--configs", default=[], nargs="*", help="which configurations to run")
     parser.add_argument("-v", default=False, action="store_true", help="be verbose")
     parser.add_argument("--runner", default="fixed", help="Run tests on GCE")
     parser.add_argument("--host", help="Runner to run on (for 'fixed')")
+    
+    parser.add_argument("--reuse_instances", default=False, action="store_true", help="If an existing instance exists, use it")
     parser.add_argument("--no_rebuild_kernel", default=False, action="store_true", help="Don't rebuild the kernel")
     parser.add_argument("--no_update_kernel", default=False, action="store_true", help="Don't update the kernel")
     parser.add_argument("--no_install_kernel", default=False, action="store_true", help="Don't install the kernel")
@@ -491,11 +521,12 @@ def main():
         out=Tee([sys.stdout, out])
         
     nova_configs = [NovaConfig(name="baseline1",
-                               kernel_repo=("git@github.com:NVSL/linux-nova.git", "HEAD"),
+                               kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
                                kernel_config_file="gce.v4.12.config",
                                module_args=""),
                     NovaConfig(name="baseline2",
-                               kernel_repo=("git@github.com:NVSL/linux-nova.git", "HEAD"),
+                               
+                               kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
                                kernel_config_file="gce.v4.12.config",
                                module_args="wprotect=1")]
 
@@ -507,6 +538,10 @@ def main():
                         tests=["generic/448", "generic/091"],
                         timeout=100,
                         test_class=XFSTests),
+             TestConfig(name="xfstests-all",
+                        tests=[], # this means all of them.
+                        timeout=40*60,
+                        test_class=XFSTests),
     ]
 
     if args.runner == "fixed":
@@ -516,21 +551,26 @@ def main():
     else:
         raise Exception("Illegal runner: {}".format(args.runner))
 
-    if args.tests is None:
+    if args.tests == []:
         args.tests = [x.name for x in tests]
+    
+    if args.configs == []:
+        args.configs = [x.name for x in nova_configs]
     
     test_map = {x.name: x for x in tests}
     nconf_map = {x.name: x for x in nova_configs}
 
-    log.info("Configs : " + " ".join([x.name for x in nova_configs]))
+    log.info("Configs : " + " ".join(args.configs))
     log.info("tests : " + " ".join(args.tests))
-    
-    for nconf in nova_configs:
-        try:
-            if not args.dont_prep:
-                runner.prepare_host_config(nconf) # update, build, and install the nova kernel
 
-            for tconf in [test_map[i] for i in args.tests]:
+    nconfs_to_run = [nconf_map[i] for i in args.configs]
+    tests_to_run = [test_map[i] for i in args.tests]
+    
+    for nconf in nconfs_to_run:
+        try:
+            runner.prepare_host_config(nconf, reuse=args.reuse_instances) # update, build, and install the nova kernel
+
+            for tconf in tests_to_run:
                 test_name = "{}/{}".format(nconf.name, tconf.name)
                 log.info("Running {}".format(test_name))
 
@@ -539,6 +579,7 @@ def main():
                         runner.reset_host(nconf)
                     runner.prepare_pmem()
                     runner.load_nova(nconf)
+                    runner.mount_nova(nconf)
                 except Exception as e:
                     log.error(e)
                     raise ResetFailedException()
