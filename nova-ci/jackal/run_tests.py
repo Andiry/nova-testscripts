@@ -612,7 +612,7 @@ def main():
     config_aliases = dict(all=[x.name for x in all_configurations]) # Run all option combinations
     config_aliases.update({x.name: [x.name] for x in nova_configs}) # an identity alias for each config
     config_aliases.update({None:["baseline"]}) # the default
-    print config_aliases
+    #print config_aliases
 
     config_to_run_names = []
     for i in args.configs:
