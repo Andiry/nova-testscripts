@@ -83,6 +83,14 @@ function load_nova() {
     sleep 1
 }
 
+function mount_one() {
+    local dev=$1
+    local dir=$2
+
+    sudo mkdir -p $dir
+    sudo mount -t NOVA -o init $dev $dir
+}
+
 function mount_nova() {
     mount_one $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
     mount_one $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
