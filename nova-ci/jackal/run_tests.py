@@ -295,8 +295,8 @@ class GCERunner(Runner):
         self.delete_by_name(self.instance_name)
 
         
-    def cleanup(self, name):
-        instance_name = "{}{}".format(self.prefix, name)
+    def cleanup(self, nconf):
+        instance_name = "{}{}".format(self.prefix, nconf.name)
         """ Cleanup after old runners... """
         log.info("cleaning up {}".format(instance_name))
         r = self.gcloud("compute instances list")
