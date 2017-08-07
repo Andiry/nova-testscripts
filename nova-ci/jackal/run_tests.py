@@ -514,7 +514,11 @@ def main():
 
     log.debug("Prompt = {}".format(PROMPT))
     global out
-    
+
+    try:
+        os.mkdir("results")
+    except:
+        pass
     out = open("results/run_test.log", "w")
     if args.v:
         log.info("Being verbose")
