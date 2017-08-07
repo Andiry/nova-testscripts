@@ -69,6 +69,7 @@ function reboot_to_nova() {
 }
 
 function check_pmem() {
+    ls /dev/pmem*
     if  ! [ -e /dev/pmem0 -a -e /dev/pmem1 ]; then
 	echo missing
     else
