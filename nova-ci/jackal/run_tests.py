@@ -33,7 +33,7 @@ class Runner(object):
         self.prompt = prompt
         self.args = args
 
-    def create(self, name):
+    def create(self, nconf):
         pass
 
     def shutdown(self):
@@ -92,15 +92,15 @@ class Runner(object):
     def install_kernel(self):
         self.shell_cmd("install_kernel", timeout=5*60)
 
-    def get_old_host_config(self, name):
+    def get_old_host_config(self, nconf):
         return False
         r = self.gcloud("compute instances list")
         
     def prepare_host_config(self, nconf, reboot=False, start_instance=True, reuse=False):
         log.info("prepare_host_config")
 #        if start_instance:
-        if not (reuse and self.get_old_host_config(nconf.name)):
-            self.create(nconf.name)
+        if not (reuse and self.get_old_host_config(nconf)):
+            self.create(nconf)
 #        elif reboot:
 #            self.reboot_to_nova()
             
@@ -211,13 +211,17 @@ class VMRunner(Runner):
         return self.hostname
     
 class GCERunner(Runner):
-    def __init__(self, prompt, args):
+    def __init__(self, prompt, args, prefix=None):
         super(GCERunner, self).__init__(prompt, args)
         
         self.args = args
         self.instance_desc = None
         self.instance_name = None
-
+        if prefix is None:
+            self.prefix = ""
+        else:
+            self.prefix = prefix + "-"
+            
         self.image = "nova-ci-image-v5"
         self.hosttype = "n1-highmem-8"
         self.gce_zone = "us-west1-c"
@@ -240,29 +244,37 @@ class GCERunner(Runner):
         r = json.loads(out)
         return r
 
-    def get_old_host_config(self, name):
-        log.info("get_old_host_config: {}".format(name))
+    def get_old_host_config(self, nconf):
+        instance_name = "{}{}".format(self.prefix, nconf.name)
+        log.info("get_old_host_config: {}".format(instance_name))
         r = self.gcloud("compute instances list")
         for host in r:
-            if host["name"] == name:
+            if host["name"] == instance_name:
                 log.info("get_old_host_config: found candidate...")
                 if host["status"] != "RUNNING":
                     #self.gcloud("gcloud -q --format json compute instances 
                     self.instance_desc = [host]
                     self.instance_name = self.instance_desc[0]["name"]
                     self.hostname = self.instance_desc[0]["networkInterfaces"][0]["accessConfigs"][0]["natIP"]
-
                 return True
         return False
         
-    def create(self, name):
+    def create(self, nconf):
+        self.instance_name = "{}{}".format(self.prefix, nconf.name)
         try:
-            self.cleanup(name)
+            self.cleanup(nconf)
         except:
             pass
-        self.instance_desc = self.gcloud("compute instances create --image {image} --machine-type {m_type} {name}".format(name=name, image=self.image, m_type=self.hosttype))
-        self.instance_name = self.instance_desc[0]["name"]
-        self.hostname = self.instance_desc[0]["networkInterfaces"][0]["accessConfigs"][0]["natIP"]
+        self.instance_desc = self.gcloud("compute instances create --image {image} --machine-type {m_type} {name}".
+                                         format(name=self.instance_name,
+                                                image=self.image,
+                                                m_type=self.hosttype))
+        
+        assert self.instance_name == self.instance_desc[0]["name"], "Created instance has wrong name"
+        self.hostname = (self.instance_desc
+                         [0]["networkInterfaces"]
+                         [0]["accessConfigs"]
+                         [0]["natIP"])
 
     def shutdown(self):
         for i in range(0,2):
@@ -508,7 +520,8 @@ def main():
     parser.add_argument("-v", default=False, action="store_true", help="be verbose")
     parser.add_argument("--runner", default="fixed", help="Run tests on GCE")
     parser.add_argument("--host", help="Runner to run on (for 'fixed')")
-    
+
+    parser.add_argument("--instance_prefix", help="Prefix used for runner instances")
     parser.add_argument("--reuse_instances", default=False, action="store_true", help="If an existing instance exists, use it")
     parser.add_argument("--no_rebuild_kernel", default=False, action="store_true", help="Don't rebuild the kernel")
     parser.add_argument("--no_update_kernel", default=False, action="store_true", help="Don't update the kernel")
@@ -563,7 +576,7 @@ def main():
     if args.runner == "fixed":
         runner = VMRunner(args.host, PROMPT, args=args)
     elif args.runner == "gce":
-        runner = GCERunner(PROMPT, args=args)
+        runner = GCERunner(PROMPT, args=args, prefix=args.instance_prefix)
     else:
         raise Exception("Illegal runner: {}".format(args.runner))
 
