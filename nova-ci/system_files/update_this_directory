@@ -1,5 +1,8 @@
 cp ~/.bash_profile  bash_profile
 cp ~/hn  ./
+cat ~/.muttrc |  perl -ne 'if (/^set from/) {print "set from \"Your <email\@address>\"\n";} else {print}' > muttrc
+cat  ~/.esmtprc | perl -ne 'if (/^password/) {print "password \"yourpassword\"\n";} else {print}' | perl -ne 'if (/^username/) {print "username \"yourusername\"\n";} else {print}' > esmtprc
+
 
 sudo cat /etc/sudoers > sudoers
 cp /etc/default/grub etc_default_grub

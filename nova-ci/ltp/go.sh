@@ -2,7 +2,7 @@
 
 . $NOVA_CI_HOME/test_util.sh
 
-LTP=$(clone_or_pull git@github.com:NVSL/NOVA-ltp.git)
+LTP=$(clone_or_pull https://github.com/NVSL/NOVA-ltp.git)
 
 cd $LTP
 

@@ -1,8 +1,8 @@
-#!/usr/bin/env bash -v
+#!/usr/bin/env bash
 
 . $NOVA_CI_HOME/test_util.sh
 
-export XFSTESTS=$(clone_or_pull git@github.com:NVSL/xfstests.git hacked-for-gce)
+export XFSTESTS=$(clone_or_pull https://github.com/NVSL/xfstests.git)
 
 export FSTYP=NOVA
 export TEST_DEV=$NOVA_CI_PRIMARY_DEV
@@ -10,7 +10,6 @@ export TEST_DIR=$NOVA_CI_PRIMARY_FS
 export SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV
 export SCRATCH_MNT=$NOVA_CI_SECONDARY_FS
 
-#echo $XFSTESTS
 
 set -v
 
@@ -27,10 +26,11 @@ if [ ".yes" == ".$REBUILD" ] || ! [ -d /var/lib/xfstests ] ; then
     sudo useradd 123456-fsgqa
 fi
 
-pwd
-echo ${NOVA_CI_LOG_DIR}/xfstests-results.out
+
 
 sudo FSTYP=NOVA TEST_DEV=$NOVA_CI_PRIMARY_DEV TEST_DIR=$NOVA_CI_PRIMARY_FS SCRATCH_MNT=$NOVA_CI_SECONDARY_FS SCRATCH_DEV=$NOVA_CI_SECONDARY_DEV bash  ./check $* 2>&1 | tee ${NOVA_CI_LOG_DIR}/xfstests-results.out
-sudo ./to_junit.py < ${NOVA_CI_LOG_DIR}/xfstests-results.out > ${NOVA_CI_LOG_DIR}/xfstests-results.xml
+$sudo ./to_junit.py < ${NOVA_CI_LOG_DIR}/xfstests-results.out > ${NOVA_CI_LOG_DIR}/xfstests-results.xml
+
+			    
 
 

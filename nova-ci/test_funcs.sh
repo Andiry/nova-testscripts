@@ -124,7 +124,7 @@ function update_kernel () {
 function build_kernel () {
     _setup
     pushd $NOVA_CI_HOME
-    cp ../kernel/$(get_host_type).config ./linux-nova/.config
+    #cp ../kernel/$(get_host_type).config ./linux-nova/.config
     sudo rm -rf *.tar.gz *.dsc *.deb *.changes
     (
 	set -v;
@@ -141,8 +141,9 @@ function install_kernel() {
     (
 	set -v;
 	cd $NOVA_CI_HOME;
-	sudo dpkg -i   linux-image-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb &&
-	sudo dpkg -i linux-headers-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb
+	sudo dpkg -i linux-image-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb &&
+	sudo dpkg -i linux-headers-${KERNEL_VERSION}_${KERNEL_VERSION}-?_amd64.deb &&
+	sudo dpkg -i linux-image-${KERNEL_VERSION}-dbg_${KERNEL_VERSION}-?_amd64.deb    
 	) || false
     sudo update-grub
 }
@@ -153,19 +154,65 @@ function reboot_to_nova() {
     sudo systemctl reboot -i
 }
 
-function build_nova() {
+
+function build_module() {
     init_tests
     pushd $NOVA_CI_HOME
+    path=$1
+    shift
+    dest=$1
+    shift
+    files=$@
+    V=0
     (set -v;
 	cd linux-nova;
-	make LOCALVERSION=-${K_SUFFIX} prepare 
-	make LOCALVERSION=-${K_SUFFIX} modules_prepare 
-	make SUBDIRS=scripts/mod LOCALVERSION=-${K_SUFFIX}
-	make -j$[$(count_cpus) + 1] SUBDIRS=fs/nova LOCALVERSION=-${K_SUFFIX}
-	sudo cp fs/nova/nova.ko /lib/modules/${KERNEL_VERSION}/kernel/fs
+	make V=$V LOCALVERSION=-${K_SUFFIX} prepare 
+	make V=$V  LOCALVERSION=-${K_SUFFIX} modules_prepare 
+	make V=$V  SUBDIRS=scripts/mod LOCALVERSION=-${K_SUFFIX}
+	make V=$V  -j$[$(count_cpus) + 1] SUBDIRS=$path LOCALVERSION=-${K_SUFFIX}
+	sudo cp $files /lib/modules/${KERNEL_VERSION}/kernel/$dest
 	sudo depmod
 	) 2>&1 |tee $R/module_build.log
     popd
+
+}
+
+function build_image() {
+    init_tests
+    pushd $NOVA_CI_HOME
+    (set -v;
+     cd linux-nova;
+     make LOCALVERSION=-nova bzImage
+    ) 2>&1 |tee $R/bzimage_build.log
+    popd
+	
+}
+
+function install_image() {
+    pushd $NOVA_CI_HOME
+    (set -v;
+     cd linux-nova;
+     sudo cp  arch/x86/boot/bzImage /boot/vmlinuz-${KERNEL_VERSION}
+     sudo update-grub
+    ) 2>&1 |tee $R/bzimage_build.log
+    popd
+    
+}
+
+function build_nova() {
+    build_module fs/nova fs fs/nova/nova.ko 
+#    init_tests
+#    pushd $NOVA_CI_HOME
+#    (set -v;
+#	cd linux-nova;
+#	make LOCALVERSION=-${K_SUFFIX} prepare 
+#	make LOCALVERSION=-${K_SUFFIX} modules_prepare 
+#	make SUBDIRS=scripts/mod LOCALVERSION=-${K_SUFFIX}
+#	make -j$[$(count_cpus) + 1] SUBDIRS=fs/nova LOCALVERSION=-${K_SUFFIX}
+#	sudo cp fs/nova/nova.ko /lib/modules/${KERNEL_VERSION}/kernel/fs
+#	sudo depmod
+#	) 2>&1 |tee $R/module_build.log
+#    popd
 
 }
 
@@ -241,6 +288,14 @@ function mount_one() {
     sudo mount -t NOVA -o init $dev $dir
 }
 
+function reload_dax() {
+    sudo rmmod dax_pmem
+    sudo rmmod device_dax
+
+    sudo modprobe dax_pmem
+    
+}
+
 
 function mount_nova() {
 
@@ -250,6 +305,14 @@ function mount_nova() {
 
     mount_one $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
     mount_one $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
+}
+
+function ktrace() {
+    echo function > /sys/kernel/tracing/current_tracer;
+    echo START > /sys/kernel/tracing/trace_marker;
+    "$@" ;
+    echo END > /sys/kernel/tracing/trace_marker;
+    cat /sys/kernel/tracing/trace 
 }
 
 function remount_nova() {
@@ -281,7 +344,9 @@ function reload_nova() {
     sudo modprobe libcrc32c
     sudo rmmod nova
 
-    sudo modprobe nova $*
+
+    sudo modprobe nova $1 #nova_dbgmask=0xfffffff
+
     
     sleep 1
 
@@ -400,20 +465,23 @@ function run_all() {
 function ngrep() {
     (
 	cd $NOVA_CI_HOME/linux-nova/fs/nova;
-	find . -name '*.c' -o -name '*.h' | xargs grep --color=always -n -A 2 -B 2  "$*" | less -S -R
+	find . -name '*.c' -o -name '*.h' | grep -v debian | xargs grep --color=always -n -A 2 -B 2  "$*" | less -S -R
     )
 }
 function lgrep() {
     (
 	cd $NOVA_CI_HOME/linux-nova;
-	find . -name '*.c' -o -name '*.h' | xargs grep --color=always -n -A 2 -B 2  "$*" | less -S -R
+	find . -name '*.c' -o -name '*.h' | grep -v debian | xargs grep --color=always -n -A 2 -B 2  "$*" | less -S -R
     )
 }
 
-function check_pmem() {
-    if  ! [ -e /dev/pmem0 -a -e /dev/pmem1 ]; then
-	echo missing
-    else
-	echo ok
+function auto_checkpatch {
+    ../../scripts/checkpatch.pl -f $1 --fix
+    diff $1 $1.EXPERIMENTAL-checkpatch-fixes | less
+    echo ok?
+    read yn
+    if [ "$yn." = "y." ]; then
+	../../scripts/checkpatch.pl -f $1 --fix-inplace
     fi
 }
+

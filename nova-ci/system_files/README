@@ -2,6 +2,8 @@ This is a set of files that makes it easier to get a useful NOVA development sys
 
 To use:
 
+0. git clone git://github.com/NVSL/nova-testscripts
+
 1.  cp etc_default_grub to /etc/default/grub # add kernel cmdline for 2 pmem devices.
 2.  cp sudoes to /etc/sudoers # don't require passwords
 3.  apt-get install apt-clone  # install a bunch of stuff
@@ -12,7 +14,8 @@ To use:
 
 on GAE:
 
-1.  apt-get install apt-clone  # install a bunch of stuff
+0.  git clone git://github.com/NVSL/nova-testscripts
+1.  sudo apt-get install apt-clone  # install a bunch of stuff
 2.  apt-clone restore nova-dev.apt-clone.tar.gz # install a bunch of stuff
 3.  cp hn ~/hn # source this to load test_funcs.sh, etc.
 4.  cp bash_profile  ~/.bash_profile # checks for /dev/pmem0 and /dev/pmem1, reboots if not found.
@@ -26,3 +29,4 @@ update_and_build_nova
 
 git config --global user.email "swanson@cs.ucsd.edu"
 git config --global user.name "Steven Swanson"
+git config --global stgit.sender "Steven Swanson <swanson@cs.ucsd.edu>"
