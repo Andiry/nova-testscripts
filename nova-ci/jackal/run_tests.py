@@ -237,10 +237,10 @@ class GCERunner(Runner):
         proc = subprocess.Popen(full_cmd,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = proc.communicate()
-        log.debug(err)
-        log.debug(out)
+        log.debug("stderr: " + err)
+        log.debug("stdout: " + out)
         if proc.returncode != 0:
-            raise Exception("'{}' failed (returncode={}): {}".format(cmd,proc.returncode)) 
+            raise Exception("'{}' failed (returncode={})".format(cmd,proc.returncode)) 
         r = json.loads(out)
         return r
 
@@ -324,6 +324,7 @@ class LoggedProcess(object):
         self.task = None
         self.log = StringIO.StringIO()
         self.timeout = timeout
+        self.finished = False
         if not self.cmd:
             self.cmd = [""]
 
@@ -344,28 +345,36 @@ class LoggedProcess(object):
         self.start = time.clock()
 
     def step(self):
+        if self.finished:
+            return False
+        
         if self.timeout is not None and time.clock() > self.start + self.timeout:
             raise TimeoutException()
-        
-        try:
-            # read everything that remains
+
+        def read_as_must_as_possible():
             while True:
                 l = self.proc.stdout.read(1024)
                 if not l:
                     break
                 self.log.write(l)
-                sys.stdout.write(l)
-
+                sys.stdout.write(".")
+        try:
+            # read everything that remains
+            read_as_must_as_possible()
         except IOError as e:  # when there's nothing to read, we'll get an exception
-            pass
+            time.sleep(0.1)
         finally:
-            if self.proc.poll() is not None: # if the process is dead, there's nothing more coming
+            if self.proc.poll() is not None: # if the process is dead, there's
+                                             # nothing much more coming
+                
+                read_as_must_as_possible() # read one more time, because more
+                                           # data may have shown up.
                 log.debug("return value: {}".format(self.proc.returncode))
+                self.finished = True
                 return False
             else:                            # otherwise, try again
                 return True
 
-        return True
     
     def finished(self):
         pass
@@ -511,7 +520,6 @@ class NovaConfig(object):
         
 
 def main():
-    log.basicConfig(level=log.DEBUG)
 
     parser = argparse.ArgumentParser()
 
@@ -548,8 +556,11 @@ def main():
     out = open("results/run_test.log", "w")
     if args.v:
         log.info("Being verbose")
+        log.basicConfig(level=log.DEBUG)
         out=Tee([sys.stdout, out])
-
+    else:
+        log.basicConfig(level=log.INFO)
+                
     def build_configs():
         config="""
         data_csum={data_csum}
@@ -657,9 +668,6 @@ def main():
                         f.write(test.junit)
                     
         except ResetFailedException as e:
-            print e
-            raise e
-        except Exception as e:
             print e
             raise e
         finally:
