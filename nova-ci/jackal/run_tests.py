@@ -297,7 +297,6 @@ class GCERunner(Runner):
         
     def cleanup(self, nconf):
         instance_name = "{}{}".format(self.prefix, nconf.name)
-        """ Cleanup after old runners... """
         log.info("cleaning up {}".format(instance_name))
         r = self.gcloud("compute instances list")
         if name in [x["name"] for x in r]:
@@ -369,7 +368,7 @@ class LoggedProcess(object):
                 
                 read_as_must_as_possible() # read one more time, because more
                                            # data may have shown up.
-                log.debug("return value: {}".format(self.proc.returncode))
+                log.info("return value: {}".format(self.proc.returncode))
                 self.finished = True
                 return False
             else:                            # otherwise, try again
@@ -554,9 +553,10 @@ def main():
     except:
         pass
     out = open("results/run_test.log", "w")
+    
     if args.v:
-        log.info("Being verbose")
         log.basicConfig(level=log.DEBUG)
+        log.info("Being verbose")
         out=Tee([sys.stdout, out])
     else:
         log.basicConfig(level=log.INFO)
