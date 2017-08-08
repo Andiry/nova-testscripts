@@ -538,6 +538,13 @@ def main():
     parser.add_argument("--dont_prep", default=False, action="store_true", help="Don't prepare the host before starting")
     parser.add_argument("--dont_kill_runner", default=False, action="store_true", help="Don't kill the runner when finished")
     args = parser.parse_args()
+    
+    if args.v:
+        log.basicConfig(level=log.DEBUG)
+        log.info("Being verbose")
+        out=Tee([sys.stdout, out])
+    else:
+        log.basicConfig(level=log.INFO)
 
     if args.prompt is None:
         PROMPT = "{}@".format(pwd.getpwuid(os.getuid()).pw_name, args.host)
@@ -554,13 +561,6 @@ def main():
         pass
     out = open("results/run_test.log", "w")
     
-    if args.v:
-        log.basicConfig(level=log.DEBUG)
-        log.info("Being verbose")
-        out=Tee([sys.stdout, out])
-    else:
-        log.basicConfig(level=log.INFO)
-                
     def build_configs():
         config="""
         data_csum={data_csum}
