@@ -263,8 +263,9 @@ class GCERunner(Runner):
         self.instance_name = "{}{}".format(self.prefix, nconf.name)
         try:
             self.cleanup(nconf)
-        except:
-            pass
+        except Exception as e:
+            log.error(e)
+
         self.instance_desc = self.gcloud("compute instances create --image {image} --machine-type {m_type} {name}".
                                          format(name=self.instance_name,
                                                 image=self.image,
@@ -299,7 +300,7 @@ class GCERunner(Runner):
         instance_name = "{}{}".format(self.prefix, nconf.name)
         log.info("cleaning up {}".format(instance_name))
         r = self.gcloud("compute instances list")
-        if name in [x["name"] for x in r]:
+        if instance_name in [x["name"] for x in r]:
             log.info("Found one...deleting")
             try:
                 self.delete_by_name(instance_name)
@@ -538,7 +539,9 @@ def main():
     parser.add_argument("--dont_prep", default=False, action="store_true", help="Don't prepare the host before starting")
     parser.add_argument("--dont_kill_runner", default=False, action="store_true", help="Don't kill the runner when finished")
     args = parser.parse_args()
-    
+
+    global out
+
     if args.v:
         log.basicConfig(level=log.DEBUG)
         log.info("Being verbose")
@@ -553,7 +556,6 @@ def main():
         
 
     log.debug("Prompt = {}".format(PROMPT))
-    global out
 
     try:
         os.mkdir("results")
