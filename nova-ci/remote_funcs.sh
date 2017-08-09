@@ -33,9 +33,7 @@ function update_kernel() {
     branch=$1
     shift
 
-    echo $repo
-    dir=$(clone_or_pull $repo)
-    echo $dir
+    dir=$(clone_or_pull $repo) 2> /dev/null
     cd $dir
     git checkout $branch
     cp ../../kernel/$config ./.config
@@ -63,8 +61,12 @@ function compute_grub_default() {
     echo "1>$menu"
 }
 
-function reboot_to_nova() {
+function schedule_reboot_to_nova() {
     sudo grub-reboot $(compute_grub_default)
+}
+
+function reboot_to_nova() {
+    schedule_reboot_to_nova
     sudo systemctl reboot -i
 }
 
