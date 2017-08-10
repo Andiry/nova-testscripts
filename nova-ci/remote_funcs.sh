@@ -33,7 +33,7 @@ function update_kernel() {
     branch=$1
     shift
 
-    dir=$(clone_or_pull $repo 2> /dev/null) 
+    dir=$(clone_or_pull $repo) 
     cd $dir
     git checkout $branch
     cp ../../kernel/$config ./.config
