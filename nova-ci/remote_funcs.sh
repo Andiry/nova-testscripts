@@ -65,7 +65,7 @@ function default_to_nova() {
     cp /etc/default/grub.d/50-cloudimg-settings.cfg /tmp
     
     (grep -v GRUB_DEFAULT < /tmp/50-cloudimg-settings.cfg; echo GRUB_DEFAULT=$(compute_grub_default)) > /etc/default/grub.d/50-cloudimg-settings.cfg
-
+    sudo update-grub
 }
 
 function schedule_reboot_to_nova() {
