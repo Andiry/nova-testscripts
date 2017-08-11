@@ -14,6 +14,7 @@ OPTS="-o StrictHostKeyChecking=no -o HashKnownHosts=no"
 # automatically connect to unknown hosts, and don't hash so the grep above works.
 while ! ssh $OPTS $host true; do
     echo Retrying $1 
+    date
     sleep 1;
 done
 
