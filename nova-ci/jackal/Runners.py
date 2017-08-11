@@ -267,7 +267,7 @@ class GCERunner(Runner):
 
     def prepare_instance(self, nova_config, reboot=False):
         log.info("prepare_instance start: {}".format(nova_config.name))
-        self.reboot_to_nova(force=reboot)
+        #self.reboot_to_nova(force=reboot)
         self.prepare_pmem()
         self.load_nova(nova_config)
         self.mount_nova(nova_config)
