@@ -69,10 +69,8 @@ def main():
 
     log.debug("Prompt = {}".format(PROMPT))
 
-    try:
+    if not os.path.isdir("./results"):
         os.mkdir("results")
-    except:
-        pass
     
     def build_configs():
         config="""
@@ -188,6 +186,7 @@ def main():
                             n = test_name.replace("/", "_")
                             with open("results/{}.junit".format(n), "w") as f:
                                 f.write(test.junit)
+
                 finally:
                     log.info("Cleaning up {}...".format(nconf.name))
                     if not args.dont_kill_runner:
