@@ -53,7 +53,7 @@ class Runner(object):
         log.debug("simple_command {} timeout={}".format(cmd, timeout))
         self.ssh.sendline(cmd)
         self.do_expect(self.ssh, self.prompt, timeout=timeout)
-        self.do_expect(self.ssh, self.prompt, timeout=timeout)
+        #self.do_expect(self.ssh, self.prompt, timeout=timeout)
         
     def shell_cmd(self, cmd, timeout=20):
         log.info("shell_cmd begin: {} (timeout: {}s)".format(cmd, timeout))
