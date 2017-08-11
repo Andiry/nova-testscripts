@@ -48,7 +48,7 @@ def main():
     parser.add_argument("--reuse_image", default=False, action="store_true", help="If an existing image exists, use it")
     parser.add_argument("--dont_build_kernel", default=False, action="store_true", help="Don't build/install the kernel")
     parser.add_argument("--dont_reset", default=False, action="store_true", help="Don't reset the host between runs")
-    parser.add_argument("--dont_dobule_expect", default=False, action="store_true", help="Only expect each string once.  Set this for jenkins.  why?  not sure.")
+    parser.add_argument("--dont_double_expect", default=False, action="store_true", help="Only expect each string once.  Set this for jenkins.  why?  not sure.")
     parser.add_argument("--dont_prep", default=False, action="store_true", help="Don't prepare the host before starting")
     parser.add_argument("--dont_kill_runner", default=False, action="store_true", help="Don't kill the runner when finished")
     args = parser.parse_args()
