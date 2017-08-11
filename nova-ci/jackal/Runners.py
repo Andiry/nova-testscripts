@@ -44,7 +44,7 @@ class Runner(object):
         
         cmd = "/bin/bash ./ssh_retry.sh {}".format(self.get_hostname())
         self.ssh = pexpect.spawn(cmd,logfile=self.log_out)
-
+        self.ssh.setwinsize(1000,1000)
         self.do_expect(self.ssh, self.prompt, timeout=timeout)
         if load_nova_ci:
             self.simple_command(". nova-testscripts/nova-ci/remote_funcs.sh")
@@ -301,7 +301,7 @@ class GCERunner(Runner):
         log.info("prepare_instance finished: {}".format(nova_config.name))
         
     def create_instance(self, nconf, reuse=False):
-        self.instance_name = "{}{}-{}".format(self.prefix, self.image_name, nconf.name)
+        self.instance_name = "{}-{}".format(self.image_name, nconf.name)
         self.instance_desc = None
         
         if reuse:
