@@ -53,7 +53,8 @@ class Runner(object):
         log.debug("simple_command {} timeout={}".format(cmd, timeout))
         self.ssh.sendline(cmd)
         self.do_expect(self.ssh, self.prompt, timeout=timeout)
-        #self.do_expect(self.ssh, self.prompt, timeout=timeout)
+        if not self.args.dont_double_expect:
+            self.do_expect(self.ssh, self.prompt, timeout=timeout)
         
     def shell_cmd(self, cmd, timeout=20):
         log.info("shell_cmd begin: {} (timeout: {}s)".format(cmd, timeout))
@@ -301,25 +302,29 @@ class GCERunner(Runner):
         
     def create_instance(self, nconf, reuse=False):
         self.instance_name = "{}{}-{}".format(self.prefix, self.image_name, nconf.name)
+        self.instance_desc = None
+        
         if reuse:
             instances = self.gcloud("compute instances list")
             for i in instances:
                 if i["name"] == self.instance_name:
                     self.instance_desc = i
-                    log.info("Reusing instance {}".format(self.instance_name))
+                    log.info("Reusing instance {}".format(i["name"]))
                     break
-        else:
+
+        if self.instance_desc == None:
             try:
                 self.cleanup_instance()
             except JackalException as e:
                 log.error(e)
 
-                self.instance_desc = self.gcloud("compute instances create {name} --image {image} --machine-type {m_type}".
-                                                 format(name=self.instance_name,
-                                                        image=self.image_name,
-                                                        m_type=self.hosttype))[0]
-        
-                assert self.instance_name == self.instance_desc[0]["name"], "Created instance has wrong name {} != {}".format(self.instance_desc, self.instance_desc[0]["name"])
+            self.instance_desc = self.gcloud("compute instances create {name} --image {image} --machine-type {m_type}".
+                                             format(name=self.instance_name,
+                                                    image=self.image_name,
+                                                    m_type=self.hosttype))[0]
+            
+            assert self.instance_name == self.instance_desc["name"], "Created instance has wrong name {} != {}".format(self.instance_desc, self.instance_desc[0]["name"])
+
         self.hostname = (self.instance_desc
                          ["networkInterfaces"]
                          [0]["accessConfigs"]
