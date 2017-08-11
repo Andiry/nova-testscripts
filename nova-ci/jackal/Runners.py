@@ -71,9 +71,9 @@ class Runner(object):
         self.exit()
 
     def update_kernel(self, nconf):
-        cmd = "(update_kernel {} {} {}) 2>&1 >/dev/null".format(nconf.kernel_config_file,
-                                                                nconf.kernel_repo[0],
-                                                                nconf.kernel_repo[1])
+        cmd = "update_kernel {} {} {}".format(nconf.kernel_config_file,
+                                              nconf.kernel_repo[0],
+                                              nconf.kernel_repo[1])
 
         self.shell_cmd(cmd, timeout=15*60)
         
@@ -89,6 +89,9 @@ class Runner(object):
 
     def schedule_reboot_to_nova(self):
         self.shell_cmd("schedule_reboot_to_nova")
+
+    def default_to_nova(self):
+        self.shell_cmd("default_to_nova")
 
     def delete_image(self, image_name):
         log.info("Deleting {}".format(image_name))
@@ -127,13 +130,9 @@ class Runner(object):
             self.update_kernel(kernel_config)
             self.build_kernel()
             self.install_kernel()
-        self.schedule_reboot_to_nova()
+        self.default_to_nova()
         self.shutdown()
         self.create_image(kernel_config)
-
-    def hard_reboot(self):
-        log.info("hard_reboot")
-        raise NotImplemented()
 
     def load_nova(self, nconf):
         log.info("load_nova")
@@ -144,25 +143,8 @@ class Runner(object):
         self.shell_cmd("mount_nova".format(nconf.module_args))
         self.shell_cmd("df")
         
-    def reset_host(self, nconf):
-        if not self.soft_reboot():
-            self.hard_reboot()
-        self.reboot_to_nova()
-        
-    def soft_reboot(self):
-        log.info("soft_reboot")
-        try:
-            self.open_shell(timeout=10)
-            self.ssh.sendline("sudo systemctl reboot -i")
-            self.do_expect(self.ssh, pexpect.EOF)
-            time.sleep(5)
-            log.info("logging in...")
-            self.open_shell(timeout=reboot_timeout)
-            self.exit()
-            return True
-        except Exception as e:
-            log.error("Couldn't soft reboot: {}".format(e))
-            return False
+    def reset_host(self):
+        self.gcloud("compute instances reset {}".format(self.instance_name))
         
     def reboot_to_nova(self, tries=0, force=False):
         log.info("Checking kernel version on {}".format(self.get_hostname()))
@@ -199,35 +181,26 @@ class Runner(object):
                 time.sleep(logout_delay)
                 self.reboot_to_nova(first_try=False, tries=tries + 1) # won't reboot if we succeeded
                     
-    def prepare_pmem(self):
+    def prepare_pmem(self, try_count=10):
         log.info("prepare_pmem Looking for pmem devices...")
         failures = 0
-        while failures < 10:
+        while failures < try_count:
             self.open_shell()
-            try:
-                self.ssh.sendline("check_pmem")
-                r = self.do_expect(self.ssh, ["ok",
-                                     "missing"])
-                if r == 0:
-                    log.info("Found pmem devices")
-                    return
-                else:
-                    failures += 1
-                    self.ssh.sendline("reboot_to_nova & exit")
-                    self.do_expect(self.ssh, pexpect.EOF)
-                    log.info("pmem devices missing, rebooting...")
-                    time.sleep(logout_delay)
-                    continue
-            except pexpect.TIMEOUT as e:
-                log.info("Reboot timed out")
-                raise JackalException("Reboot to nova failed")
-            finally:
-                try:
-                    self.exit()
-                except:
-                    pass
+            self.ssh.sendline("check_pmem")
+            r = self.do_expect(self.ssh, ["ok",
+                                          "missing",
+                                          pexpect.TIMEOUT,
+                                          pexpect.EOF])
+            self.exit()
+            if r == 0:
+                log.info("Found pmem devices")
+                return
+            else:
+                failures += 1
+                log.info("pmem devices missing, rebooting...")
+                self.reset_host()
                     
-        raise JackalException("Failed to reboot and create pmem devices after {} tries".format(failures))
+        raise JackalException("Failed to reboot and create pmem devices after {} tries".format(try_count))
 
 class VMRunner(Runner):
     def __init__(self, hostname, prompt, args, log_out):
