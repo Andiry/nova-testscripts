@@ -52,6 +52,9 @@ def main():
     parser.add_argument("--dont_kill_runner", default=False, action="store_true", help="Don't kill the runner when finished")
     args = parser.parse_args()
 
+    if not os.path.isdir("./results"):
+        os.mkdir("./results")
+
     out = open("results/run_test.log", "w")
 
     if args.v:
@@ -69,8 +72,6 @@ def main():
 
     log.debug("Prompt = {}".format(PROMPT))
 
-    if not os.path.isdir("./results"):
-        os.mkdir("results")
     
     def build_configs():
         config="""
