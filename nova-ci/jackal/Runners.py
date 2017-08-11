@@ -185,9 +185,9 @@ class Runner(object):
         log.info("prepare_pmem Looking for pmem devices...")
         failures = 0
         while failures < try_count:
-            self.open_shell()
-            self.ssh.sendline("check_pmem")
             try:
+                self.open_shell()
+                self.ssh.sendline("check_pmem")
                 r = self.do_expect(self.ssh, ["ok",
                                               "missing",
                                               pexpect.TIMEOUT,
