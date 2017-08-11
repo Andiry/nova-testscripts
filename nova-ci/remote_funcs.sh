@@ -61,6 +61,13 @@ function compute_grub_default() {
     echo "1>$menu"
 }
 
+function default_to_nova() {
+    cp /etc/default/grub.d/50-cloudimg-settings.cfg /tmp
+    
+    (grep -v GRUB_DEFAULT < /tmp/50-cloudimg-settings.cfg; echo GRUB_DEFAULT=$(compute_grub_default)) > /etc/default/grub.d/50-cloudimg-settings.cfg
+
+}
+
 function schedule_reboot_to_nova() {
     sudo grub-reboot $(compute_grub_default)
 }
