@@ -187,17 +187,25 @@ class Runner(object):
         while failures < try_count:
             self.open_shell()
             self.ssh.sendline("check_pmem")
-            r = self.do_expect(self.ssh, ["ok",
-                                          "missing",
-                                          pexpect.TIMEOUT,
-                                          pexpect.EOF])
-            self.exit()
+            try:
+                r = self.do_expect(self.ssh, ["ok",
+                                              "missing",
+                                              pexpect.TIMEOUT,
+                                              pexpect.EOF])
+                self.exit()
+            except pexpect.TIMEOUT:
+                log.info("Timed out.")
+                r = 2
+            except pexpect.EOF:
+                log.info("Unexpected EOF.")
+                r = 2
+                
             if r == 0:
                 log.info("Found pmem devices")
                 return
             else:
                 failures += 1
-                log.info("pmem devices missing, rebooting...")
+                log.info("pmem devices missing (or something else went wrong), rebooting...")
                 self.reset_host()
                     
         raise JackalException("Failed to reboot and create pmem devices after {} tries".format(try_count))
