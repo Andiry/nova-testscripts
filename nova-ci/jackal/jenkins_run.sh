@@ -10,4 +10,4 @@ case "$1" in
 	args="-v --tests xfstests1 --configs baseline --dont_kill_runner --instance_prefix jenkins-test --reuse_image";;
 esac
 
-echo ./run_tests.py --runner gce  --dont_double_expect  $args
+./run_tests.py --runner gce  --dont_double_expect  $args
