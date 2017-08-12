@@ -1,3 +1,4 @@
+import time
 import pexpect
 import logging as log
 from JackalException import *
@@ -6,7 +7,7 @@ import subprocess
 import time
 import sys
 
-reboot_timeout=180 # seems to take about a minute, usually.
+reboot_timeout=60 # seems to take about a minute, usually.
 logout_delay=10
 
 out = None
@@ -183,8 +184,9 @@ class Runner(object):
                     
     def prepare_pmem(self, try_count=10):
         log.info("prepare_pmem Looking for pmem devices...")
-        failures = 0
+        failures = 1
         while failures < try_count:
+            log.info("Started waiting @ {}".format(time.time()))
             try:
                 self.open_shell()
                 self.ssh.sendline("check_pmem")
@@ -199,15 +201,24 @@ class Runner(object):
             except pexpect.EOF:
                 log.info("Unexpected EOF.")
                 r = 2
-                
+            
             if r == 0:
                 log.info("Found pmem devices")
+                log.info("finished waiting @ {}".format(time.time()))
                 return
             else:
                 failures += 1
-                log.info("pmem devices missing (or something else went wrong), rebooting...")
-                self.reset_host()
-                    
+                if r == 1:
+                    log.info("pmem devices missing...")
+
+                if (failures % 4) == 0 and r == 1:
+                    log.info("Recreating instance...")
+                    self.delete()
+                    self.create_instance_by_name(self.instance_name)
+                else:
+                    log.info("Rebooting...")
+                    self.reset_host()
+        log.info("finished waiting @ {}".format(time.time()))
         raise JackalException("Failed to reboot and create pmem devices after {} tries".format(try_count))
 
 class VMRunner(Runner):
@@ -280,9 +291,14 @@ class GCERunner(Runner):
         self.load_nova(nova_config)
         self.mount_nova(nova_config)
         log.info("prepare_instance finished: {}".format(nova_config.name))
-        
+
+    
     def create_instance(self, nconf, reuse=False):
-        self.instance_name = "{}-{}".format(self.image_name, nconf.name)
+        name = "{}-{}".format(self.image_name, nconf.name)
+        self.create_instance_by_name(name, reuse)
+                 
+    def create_instance_by_name(self, name, reuse=False):
+        self.instance_name = name
         self.instance_desc = None
         
         if reuse:
@@ -299,7 +315,7 @@ class GCERunner(Runner):
             except JackalException as e:
                 log.error(e)
 
-            self.instance_desc = self.gcloud("compute instances create {name} --image {image} --machine-type {m_type}".
+            self.instance_desc = self.gcloud("compute instances create {name} --image {image} --machine-type {m_type}". # --no-address
                                              format(name=self.instance_name,
                                                     image=self.image_name,
                                                     m_type=self.hosttype))[0]
