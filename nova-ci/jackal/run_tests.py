@@ -45,6 +45,7 @@ def main():
     parser.add_argument("--runner", default="fixed", help="Run tests on GCE")
     parser.add_argument("--host", help="Runner to run on (for 'fixed')")
 
+    parser.add_argument("--list_configs", default=False, action="store_true", help="list available configurations")
     parser.add_argument("--instance_prefix", help="Prefix used for runner instances")
     parser.add_argument("--reuse_image", default=False, action="store_true", help="If an existing image exists, use it")
     parser.add_argument("--reuse_instance", default=False, action="store_true", help="If an existing instance exists, use it")
@@ -113,6 +114,11 @@ def main():
                                    kernel_config_file="gce.v4.12.config")]
 
     all_configurations = build_configs()
+
+    if args.list_configs:
+        print "\n".join([x.name for x in all_configurations])
+        sys.exit(0)
+        
     nova_configs = [NovaConfig(name="baseline",
                                kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
                                kernel_config_file="gce.v4.12.config",

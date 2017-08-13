@@ -26,7 +26,7 @@ class XFSTests(LoggedProcess):
         def success(name):
             a = name.split("/")
             return """<testcase classname="{}" name="{}">
-<testcase/>""".format(a[0], 
+</testcase>""".format(a[0], 
                     a[1])
         
         def failure(name, kind, reason):
