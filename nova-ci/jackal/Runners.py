@@ -185,6 +185,7 @@ class Runner(object):
     def prepare_pmem(self, try_count=10):
         log.info("prepare_pmem Looking for pmem devices...")
         failures = 1
+        restarts = 1
         while failures < try_count:
             log.info("Started waiting @ {}".format(time.time()))
             try:
@@ -207,11 +208,12 @@ class Runner(object):
                 log.info("finished waiting @ {}".format(time.time()))
                 return
             else:
-                failures += 1
+                restarts += 1
                 if r == 1:
                     log.info("pmem devices missing...")
-
-                if (failures % 4) == 0 and r == 1:
+                    failures += 1
+                
+                if (restarts % 4) == 0 and r != 1:
                     log.info("Recreating instance...")
                     self.delete()
                     self.create_instance_by_name(self.instance_name)
@@ -219,7 +221,7 @@ class Runner(object):
                     log.info("Rebooting...")
                     self.reset_host()
         log.info("finished waiting @ {}".format(time.time()))
-        raise JackalException("Failed to reboot and create pmem devices after {} tries".format(try_count))
+        raise JackalException("Failed to reboot and create pmem devices after {} checks and {} restarts".format(try_count, restarts
 
 class VMRunner(Runner):
     def __init__(self, hostname, prompt, args, log_out):
