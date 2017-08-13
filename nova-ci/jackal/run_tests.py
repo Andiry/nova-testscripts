@@ -11,6 +11,7 @@ import fcntl
 import os
 import pwd
 import collections
+import DMesg
 
 from JackalException import *
 from XFSTests import XFSTests
@@ -52,11 +53,16 @@ def main():
     parser.add_argument("--dont_double_expect", default=False, action="store_true", help="Only expect each string once.  Set this for jenkins.  why?  not sure.")
     parser.add_argument("--dont_prep", default=False, action="store_true", help="Don't prepare the host before starting")
     parser.add_argument("--dont_kill_runner", default=False, action="store_true", help="Don't kill the runner when finished")
+    parser.add_argument("--collect_dmesg", default=False, action="store_true", help="Collect output from dmesg")
+    
     args = parser.parse_args()
 
     if not os.path.isdir("./results"):
         os.mkdir("./results")
 
+    if args.reuse_image or args.reuse_instance:
+        args.dont_kill_runner = True
+        
     if not args.reuse_image:  # if we are going to recreate the image, the
                               # instances are out of date.
         args.reuse_instance = False
@@ -179,17 +185,22 @@ def main():
                     first_time = True
                     
                     for tconf in tests_to_run:
+
                         test_name = "{}/{}/{}".format(kernel.name, nconf.name, tconf.name)
+                                          
                         runner.prepare_instance(nconf, reboot=not first_time)
-                        log.info("Running {}".format(test_name))
 
                         try:
+                            dmesg = DMesg.DMesgDumper("results/{}.dmesg".format(test_name.replace("/", "_")), runner.get_hostname())
+                            log.info("Running {}".format(test_name))
+
                             test = tconf.test_class(test_name, tconf, runner)
                             test.go()
                         except JackalException as e:
                             log.error("{} failed: {}".format(test_name, e))
                         finally:
                             test.finish()
+                            dmesg.done()
                             n = test_name.replace("/", "_")
                             with open("results/{}.junit".format(n), "w") as f:
                                 f.write(test.junit)

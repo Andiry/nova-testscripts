@@ -11,10 +11,9 @@ class XFSTests(LoggedProcess):
         self.test_name = test_name
         self.junit = None
         self.runner = runner
-        self.dmesg = None
         self.cmd = "/usr/bin/ssh {} nova-testscripts/nova-ci/run.sh run-test xfstests {}".format(runner.get_hostname(), " ".join(self.tconf.tests)).split(" ")
     
-    def build_junit(self, dmesg_map={}):
+    def build_junit(self):
         
         lines = self.log.getvalue().split("\n")
 
@@ -27,21 +26,17 @@ class XFSTests(LoggedProcess):
         def success(name):
             a = name.split("/")
             return """<testcase classname="{}" name="{}">
-                         <dmesg><![CDATA[{dmesg}]]></dmesg>
 <testcase/>""".format(a[0], 
-                    a[1], 
-                    dmesg=dmesg_map.get(name) or "")
+                    a[1])
         
         def failure(name, kind, reason):
             a = name.split("/")
             return """<testcase classname="{test_class}" name="{name}">
                          <failure type="{type}"><![CDATA[{reason}]]></failure>
-                         <dmesg><![CDATA[{dmesg}]]></dmesg>
                       </testcase>""".format(test_class=a[0], 
                                             name=a[1],
                                             type=kind,
-                                            reason=reason,
-                                            dmesg=dmesg_map.get(name) or "")
+                                            reason=reason)
 
         out = []
 
@@ -74,22 +69,7 @@ class XFSTests(LoggedProcess):
 
         self.junit =  """<testsuite name="{test_name}" tests="{count}">{tests}</testsuite>""".format(test_name=self.test_name, count=len(out), tests='\n'.join(out))
 
-    def start(self):
-        self.dmesg = DMesg.Dmesg(self.runner.get_hostname())
-        LoggedProcess.start(self)
-        self.dmesg.start()
-
-    def step(self):
-        
-        try:
-            return LoggedProcess.step(self) and self.dmesg.step()
-        except TimeoutException as e:
-            log.error("{} Timed out".format(self.test_name))
-            return False
-        
     def finish(self):
         LoggedProcess.finish(self)
-        self.dmesg.finish()
-        self.dmesg.split_log()
-        self.build_junit(self.dmesg.test_map)
+        self.build_junit()
         print self.junit

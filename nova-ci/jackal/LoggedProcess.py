@@ -8,11 +8,15 @@ import subprocess
 import os
 
 class LoggedProcess(object):
-    def __init__(self, cmd, timeout=None):
+    def __init__(self, cmd, timeout=None, outfile=None):
         super(LoggedProcess, self).__init__()
         self.cmd = cmd
         self.task = None
-        self.log = StringIO.StringIO()
+        if outfile is None:
+            self.log = StringIO.StringIO()
+        else:
+            self.log = outfile
+            
         self.timeout = timeout
         self.ready_to_finish = False
         #self.finish = False
