@@ -219,7 +219,6 @@ def main():
 
         (short_hash, full_hash) = get_hash(kernel_config)
         runner.set_prefix("{prefix}{hash}".format(prefix=t, hash=short_hash))
-        continue
 
         try:
             runner.prepare_image(kernel_config, reuse=args.reuse_image) # update, build, and install the nova kernel
