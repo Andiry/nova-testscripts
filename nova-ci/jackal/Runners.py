@@ -241,16 +241,19 @@ class GCERunner(Runner):
 
         self.image_desc = None
         self.image_name = None
-                    
-        if prefix is None:
-            self.prefix = ""
-        else:
-            self.prefix = prefix + "-"
+        self.set_prefix(prefix)
             
         self.base_image = "nova-ci-image-v6"
         self.hosttype = "n1-highmem-8"
         self.gce_zone = "us-west1-c"
-        
+
+    def set_prefix(self, prefix):
+        if prefix is None:
+            self.prefix = ""
+        else:
+            self.prefix = prefix + "-"
+        log.info("Setting prefix to {}".format(self.prefix))
+    
     def get_hostname(self):
         return self.hostname
 

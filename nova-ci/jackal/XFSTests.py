@@ -5,13 +5,30 @@ import logging as log
 import DMesg
 
 class XFSTests(LoggedProcess):
-    def __init__(self, test_name, tconf, runner):
+    def __init__(self, test_name, test_config, nova_config, kernel_config, runner):
         super(XFSTests, self).__init__(30*60)
-        self.tconf = tconf
+        self.test_config = test_config
+        self.kernel_config = kernel_config
+        self.nova_config = nova_config
         self.test_name = test_name
         self.junit = None
         self.runner = runner
-        self.cmd = "/usr/bin/ssh {} nova-testscripts/nova-ci/run.sh run-test xfstests {}".format(runner.get_hostname(), " ".join(self.tconf.tests)).split(" ")
+        self.cmd = "/usr/bin/ssh {} nova-testscripts/nova-ci/run.sh run-test xfstests {}".format(runner.get_hostname(), " ".join(self.test_config.tests)).split(" ")
+
+
+    def compute_test_classname(self, name):
+        return self.test_config.name
+
+    def compute_test_name(self, name):
+        return "/".join([self.kernel_config.name,
+                         self.test_config.name,
+                         name,
+                         self.nova_config.name])
+
+    def compute_testsuite_name(self):
+        return "/".join([self.kernel_config.name,
+                         self.nova_config.name,
+                         self.test_config.name])
     
     def build_junit(self):
         
@@ -33,8 +50,8 @@ class XFSTests(LoggedProcess):
             a = name.split("/")
             return """<testcase classname="{test_class}" name="{name}">
                          <failure type="{type}"><![CDATA[{reason}]]></failure>
-                      </testcase>""".format(test_class=a[0], 
-                                            name=a[1],
+                      </testcase>""".format(test_class=self.compute_test_classname(name),
+                                            name=compute_test_name(name),
                                             type=kind,
                                             reason=reason)
 
@@ -67,7 +84,7 @@ class XFSTests(LoggedProcess):
                     assert False
             l += 1
 
-        self.junit =  """<testsuite name="{test_name}" tests="{count}">{tests}</testsuite>""".format(test_name=self.test_name, count=len(out), tests='\n'.join(out))
+        self.junit =  """<testsuite name="{test_name}" tests="{count}">{tests}</testsuite>""".format(test_name=self.compute_testsuite_name(), count=len(out), tests='\n'.join(out))
 
     def finish(self):
         LoggedProcess.finish(self)

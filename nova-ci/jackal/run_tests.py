@@ -31,8 +31,34 @@ class Tee(object):
 
 KernelConfig = collections.namedtuple("KernelConfig", "name kernel_repo kernel_config_file")
 TestConfig = collections.namedtuple("TestConfig", "name tests test_class timeout")
-NovaConfig = collections.namedtuple("NovaConfig", "name module_args kernel_repo kernel_config_file")
+NovaConfig = collections.namedtuple("NovaConfig", "name module_args")
 
+
+def get_hash(kernel_config):
+    repo_dir = kernel_config.kernel_repo[0].split("/")[-1][:-4]
+    print repo_dir
+    if not os.path.isdir(repo_dir):
+        subprocess.call("git clone {}".format(kernel_config.kernel_repo[0]), shell=True)
+
+    subprocess.call("""
+    for branch in `git branch -a | grep remotes | grep -v HEAD | grep -v master `; do
+    git branch --track ${branch#remotes/origin/} $branch
+    done; git fetch --all""",cwd=repo_dir, shell=True)
+                    
+    #subprocess.call("(cd {}; git fetch remotes/origin/{})".format(repo_dir, kernel_config.kernel_repo[1]), shell=True)
+
+    out = StringIO.StringIO()
+
+    cmd = "git log {branch} -n 1 --pretty=format:%h-%H".format(branch=kernel_config.kernel_repo[1])
+    print cmd
+    proc = subprocess.Popen(cmd.split(" "),
+                            cwd=repo_dir,
+                            stdout=subprocess.PIPE)
+    (stdout, stderr) = proc.communicate()
+
+    return stdout[:-1].split("-")
+    
+        
 def main():
 
     parser = argparse.ArgumentParser()
@@ -44,7 +70,8 @@ def main():
     parser.add_argument("-v", default=False, action="store_true", help="be verbose")
     parser.add_argument("--runner", default="fixed", help="Run tests on GCE")
     parser.add_argument("--host", help="Runner to run on (for 'fixed')")
-
+    parser.add_argument("--branch", default="master", help="Which branch to build/test")
+    
     parser.add_argument("--list_configs", default=False, action="store_true", help="list available configurations")
     parser.add_argument("--instance_prefix", help="Prefix used for runner instances")
     parser.add_argument("--reuse_image", default=False, action="store_true", help="If an existing image exists, use it")
@@ -55,7 +82,7 @@ def main():
     parser.add_argument("--dont_prep", default=False, action="store_true", help="Don't prepare the host before starting")
     parser.add_argument("--dont_kill_runner", default=False, action="store_true", help="Don't kill the runner when finished")
     parser.add_argument("--collect_dmesg", default=False, action="store_true", help="Collect output from dmesg")
-    
+
     args = parser.parse_args()
 
     if not os.path.isdir("./results"):
@@ -103,14 +130,18 @@ def main():
                         for metadata_csum in [0,1]:
                             for wprotect in [0,1]:
                                 r.append(NovaConfig(name="baseline-{data_csum}-{data_parity}-{dram_struct_csum}-{inplace_data_updates}-{metadata_csum}-{wprotect}".format(**locals()),
-                                                    kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
-                                                    kernel_config_file="gce.v4.12.config",
                                                     module_args=config.format(**locals())))
 
         return r
 
-    kernel_configs = [KernelConfig("nova-kernel",
-                                   kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
+    kernel_configs = [KernelConfig("nova",
+                                   kernel_repo=("https://github.com/NVSL/linux-nova.git", args.branch),
+                                   kernel_config_file="gce.v4.12.config"),
+                      KernelConfig("nova-master",
+                                   kernel_repo=("https://github.com/NVSL/linux-nova.git", "master"),
+                                   kernel_config_file="gce.v4.12.config"),
+                      KernelConfig("nova-devel",
+                                   kernel_repo=("https://github.com/NVSL/linux-nova.git", "devel"),
                                    kernel_config_file="gce.v4.12.config")]
 
     all_configurations = build_configs()
@@ -120,20 +151,16 @@ def main():
         sys.exit(0)
         
     nova_configs = [NovaConfig(name="baseline",
-                               kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
-                               kernel_config_file="gce.v4.12.config",
                                module_args=""),
                     NovaConfig(name="baseline2",
-                               kernel_repo=("https://github.com/NVSL/linux-nova.git", "HEAD"),
-                               kernel_config_file="gce.v4.12.config",
                                module_args="wprotect=1")] + all_configurations
 
     tests = [TestConfig(name="xfstests1",
-                        tests=["generic/092", "generic/080"],
+                        tests=["generic/075", "generic/076"],
                         timeout=100,
                         test_class=XFSTests),
              TestConfig(name="xfstests2",
-                        tests=["generic/448", "generic/091"],
+                        tests=["generic/079", "generic/080"],
                         timeout=100,
                         test_class=XFSTests),
              TestConfig(name="xfstests-all",
@@ -166,9 +193,9 @@ def main():
     kernels_to_run = select(args.kernels,
                             universe=kernel_configs,
                             groups={},
-                            default="nova-kernel")
+                            default="nova-master")
 
-    nconfs_to_run = select(args.configs,
+    nova_configs_to_run = select(args.configs,
                            universe=nova_configs,
                            groups=dict(all=[x.name for x in all_configurations]),
                            default="baseline")
@@ -179,28 +206,42 @@ def main():
                           default="xfstests1")
 
     log.info("kernel_configs : " + " ".join([x.name for x in kernels_to_run]))
-    log.info("nova_configs : " + " ".join([x.name for x in nconfs_to_run]))
+    log.info("nova_configs : " + " ".join([x.name for x in nova_configs_to_run]))
     log.info("tests : " + " ".join([x.name for x in tests_to_run]))
+
     
-    for kernel in kernels_to_run:
+    for kernel_config in kernels_to_run:
+        if args.instance_prefix:
+            t = args.instance_prefix + "-"
+        else:
+            t = ""
+
+        (short_hash, full_hash) = get_hash(kernel_config)
+        runner.set_prefix("{prefix}{hash}".format(prefix=t, hash=short_hash))
+        continue
+
         try:
-            runner.prepare_image(kernel, reuse=args.reuse_image) # update, build, and install the nova kernel
-            for nconf in nconfs_to_run:
+            runner.prepare_image(kernel_config, reuse=args.reuse_image) # update, build, and install the nova kernel
+            for nova_config in nova_configs_to_run:
                 try:
-                    runner.create_instance(nconf, reuse=args.reuse_image)
+                    runner.create_instance(nova_config, reuse=args.reuse_image)
                     first_time = True
                     
-                    for tconf in tests_to_run:
+                    for test_config in tests_to_run:
 
-                        test_name = "{}/{}/{}".format(kernel.name, nconf.name, tconf.name)
+                        test_name = "{}/{}/{}".format(kernel_config.name, nova_config.name, test_config.name)
                                           
-                        runner.prepare_instance(nconf, reboot=not first_time)
+                        runner.prepare_instance(nova_config, reboot=not first_time)
 
                         try:
                             dmesg = DMesg.DMesgDumper("results/{}.dmesg".format(test_name.replace("/", "_")), runner.get_hostname())
                             log.info("Running {}".format(test_name))
 
-                            test = tconf.test_class(test_name, tconf, runner)
+                            test = test_config.test_class(test_name,
+                                                          test_config=test_config,
+                                                          kernel_config=kernel_config,
+                                                          nova_config=nova_config,
+                                                          runner=runner)
                             test.go()
                         except JackalException as e:
                             log.error("{} failed: {}".format(test_name, e))
@@ -212,7 +253,7 @@ def main():
                                 f.write(test.junit)
 
                 finally:
-                    log.info("Cleaning up {}...".format(nconf.name))
+                    log.info("Cleaning up {}...".format(nova_config.name))
                     if not args.dont_kill_runner:
                         runner.shutdown()
                         runner.delete()
