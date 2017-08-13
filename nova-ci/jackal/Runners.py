@@ -221,7 +221,7 @@ class Runner(object):
                     log.info("Rebooting...")
                     self.reset_host()
         log.info("finished waiting @ {}".format(time.time()))
-        raise JackalException("Failed to reboot and create pmem devices after {} checks and {} restarts".format(try_count, restarts
+        raise JackalException("Failed to reboot and create pmem devices after {} checks and {} restarts".format(try_count, restarts))
 
 class VMRunner(Runner):
     def __init__(self, hostname, prompt, args, log_out):
