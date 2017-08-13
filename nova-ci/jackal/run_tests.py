@@ -74,7 +74,8 @@ def main():
     
     parser.add_argument("--list_configs", default=False, action="store_true", help="list available configurations")
     parser.add_argument("--instance_prefix", help="Prefix used for runner instances")
-    parser.add_argument("--reuse_image", default=False, action="store_true", help="If an existing image exists, use it")
+    parser.add_argument("--reuse_image", default=True, action="store_true", help="If an existing image exists, use it")
+    parser.add_argument("--dont_reuse_image", dest="reuse_image", action="store_false", help="If an existing image exists, don't use it")
     parser.add_argument("--reuse_instance", default=False, action="store_true", help="If an existing instance exists, use it")
     parser.add_argument("--dont_build_kernel", default=False, action="store_true", help="Don't build/install the kernel")
     parser.add_argument("--dont_reset", default=False, action="store_true", help="Don't reset the host between runs")
