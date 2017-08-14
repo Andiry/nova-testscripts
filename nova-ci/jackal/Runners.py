@@ -93,7 +93,6 @@ class Runner(object):
 
     def get_old_host_config(self, nconf):
         return False
-        r = self.gcloud("compute instances list")
 
     def create_instance(self, nconf, reuse=False):
         pass
@@ -105,22 +104,10 @@ class Runner(object):
         self.shell_cmd("default_to_nova")
 
     def delete_image(self, image_name):
-        log.info("Deleting {}".format(image_name))
-        self.gcloud("compute images delete {name}".format(name=image_name))
+        pass
 
     def create_image(self, kernel_config):
-
-        try:
-            self.delete_image(self.image_name)
-        except JackalException as e:
-            log.info(e)
-            
-        r = self.gcloud("compute images create {name} --source-disk {src_name} --source-disk-zone {zone}"
-                        .format(src_name=self.instance_name,
-                                name=self.image_name,
-                                zone=self.gce_zone))
-
-        self.image_desc = r[0]
+        pass
 
     def prepare_instance(self, nova_config, reboot=False):
         log.info("prepare_instance start: {}".format(nova_config.name))
@@ -144,7 +131,7 @@ class Runner(object):
         self.shell_cmd("df")
         
     def reset_host(self):
-        self.gcloud("compute instances reset {}".format(self.instance_name))
+        pass
         
     def reboot_to_nova(self, tries=0, force=False):
         log.info("Checking kernel version on {}".format(self.get_hostname()))
@@ -183,6 +170,7 @@ class Runner(object):
                     
     def prepare_pmem(self, try_count=10):
         log.info("prepare_pmem Looking for pmem devices...")
+        return 
         failures = 1
         restarts = 1
         while failures < try_count:
@@ -287,7 +275,10 @@ class GCERunner(Runner):
     def create_instance(self, nconf, reuse=False):
         name = "{}-{}".format(self.image_name, nconf.name)
         self.create_instance_by_name(name, reuse)
-                 
+
+    def reset_host(self):
+        self.gcloud("compute instances reset {}".format(self.instance_name))
+
     def create_instance_by_name(self, name, reuse=False):
         self.instance_name = name
         self.instance_desc = None
@@ -340,6 +331,25 @@ class GCERunner(Runner):
         self.default_to_nova()
         self.shutdown()
         self.create_image(kernel_config)
+
+    def delete_image(self, image_name):
+        log.info("Deleting {}".format(image_name))
+        self.gcloud("compute images delete {name}".format(name=image_name))
+
+    def create_image(self, kernel_config):
+
+        try:
+            self.delete_image(self.image_name)
+        except JackalException as e:
+            log.info(e)
+            
+        r = self.gcloud("compute images create {name} --source-disk {src_name} --source-disk-zone {zone}"
+                        .format(src_name=self.instance_name,
+                                name=self.image_name,
+                                zone=self.gce_zone))
+
+        self.image_desc = r[0]
+
 
     def create_prototype_instance(self, kernel_config):
         self.instance_name = "{}{}".format(self.prefix, kernel_config.name)

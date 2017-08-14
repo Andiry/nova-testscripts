@@ -15,6 +15,7 @@ import DMesg
 
 from JackalException import *
 from XFSTests import XFSTests
+from LTP import LTP
 from Runners import GCERunner, VMRunner
 
 out = None
@@ -32,7 +33,6 @@ class Tee(object):
 KernelConfig = collections.namedtuple("KernelConfig", "name kernel_repo kernel_config_file")
 TestConfig = collections.namedtuple("TestConfig", "name config test_class timeout")
 NovaConfig = collections.namedtuple("NovaConfig", "name module_args")
-
 
 def get_hash(kernel_config):
     repo_dir = kernel_config.kernel_repo[0].split("/")[-1][:-4]
@@ -185,6 +185,15 @@ def main():
                         config="",
                         timeout=40*60,
                         test_class=XFSTests),
+
+             TestConfig(name="ltp1",
+                        config="-s gf01",
+                        timeout=30*60,
+                        test_class=LTP),
+             TestConfig(name="ltp",
+                        config="",
+                        timeout=30*60,
+                        test_class=LTP)
     ]
 
     if args.runner == "vm":
