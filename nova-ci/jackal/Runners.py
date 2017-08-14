@@ -170,7 +170,6 @@ class Runner(object):
                     
     def prepare_pmem(self, try_count=10):
         log.info("prepare_pmem Looking for pmem devices...")
-        return 
         failures = 1
         restarts = 1
         while failures < try_count:
