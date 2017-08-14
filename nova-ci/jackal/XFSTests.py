@@ -51,7 +51,7 @@ class XFSTests(LoggedProcess):
             return """<testcase classname="{test_class}" name="{name}">
                          <failure type="{type}"><![CDATA[{reason}]]></failure>
                       </testcase>""".format(test_class=self.compute_test_classname(name),
-                                            name=compute_test_name(name),
+                                            name=self.compute_test_name(name),
                                             type=kind,
                                             reason=reason)
 
