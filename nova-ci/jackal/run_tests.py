@@ -264,8 +264,8 @@ def main():
                         except JackalException as e:
                             log.error("{} failed: {}".format(test_name, e))
                         finally:
-                            #test.finish()
-                            #dmesg.done()
+                            test.finish()
+                            dmesg.done()
                             n = test_name.replace("/", "_")
                             with open("results/{}.junit".format(n), "w") as f:
                                 pass
