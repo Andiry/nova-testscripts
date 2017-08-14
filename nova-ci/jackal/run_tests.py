@@ -79,7 +79,8 @@ def main():
     parser.add_argument("--dont_reuse_image", dest="reuse_image", action="store_false", help="If an existing image exists, don't use it")
     
     parser.add_argument("--reuse_instance", default=False, action="store_true", help="If an existing instance exists, use it")
-    parser.add_argument("--dont_reuse_instance", target="reuse_instance", action="store_false", help="If an existing instance exists, don't use it")
+    parser.add_argument("--dont_reuse_instance", dest="reuse_instance", action="store_false", help="If an existing instance exists, don't use it")
+    
     parser.add_argument("--dont_build_kernel", default=False, action="store_true", help="Don't build/install the kernel")
     parser.add_argument("--dont_reset", default=False, action="store_true", help="Don't reset the host between runs")
     parser.add_argument("--dont_double_expect", default=False, action="store_true", help="Only expect each string once.  Set this for jenkins.  why?  not sure.")
