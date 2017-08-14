@@ -42,10 +42,10 @@ class XFSTests(LoggedProcess):
         
         def success(name):
             a = name.split("/")
-            return """<testcase classname="{}" name="{}">
-</testcase>""".format(a[0], 
-                    a[1])
-        
+            return """<testcase classname="{test_class}" name="{name}">
+</testcase>""".format(test_class=self.compute_test_classname(name),
+                      name=self.compute_test_name(name))
+
         def failure(name, kind, reason):
             a = name.split("/")
             return """<testcase classname="{test_class}" name="{name}">
