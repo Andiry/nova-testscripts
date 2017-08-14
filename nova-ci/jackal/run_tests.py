@@ -93,15 +93,18 @@ def main():
     if not os.path.isdir("./results"):
         os.mkdir("./results")
 
-    if args.reuse_image or args.reuse_instance:
+    if args.reuse_instance:
         args.dont_kill_runner = True
         
     if not args.reuse_image:  # if we are going to recreate the image, the
                               # instances are out of date.
         args.reuse_instance = False
 
+    log.info(args)
+    
     out = open("results/run_test.log", "w")
 
+    
     if args.v:
         log.basicConfig(level=log.DEBUG)
         log.info("Being verbose")
@@ -161,15 +164,23 @@ def main():
                                module_args="wprotect=1")] + all_configurations
 
     tests = [TestConfig(name="xfstests1",
-                        tests=["generic/075", "generic/076"],
+                        config="generic/075 generic/076",
                         timeout=100,
                         test_class=XFSTests),
              TestConfig(name="xfstests2",
-                        tests=["generic/079", "generic/080"],
+                        config="generic/079 generic/080",
                         timeout=100,
                         test_class=XFSTests),
+             TestConfig(name="xfstests-pass",
+                        config="-x nova-fail",
+                        timeout=40*60,
+                        test_class=XFTests),
+             TestConfig(name="xfstests-fail",
+                        config="-g nova-fail",
+                        timeout=40*60,
+                        test_class=XFTests),
              TestConfig(name="xfstests-all",
-                        tests=[], # this means all of them.
+                        config="",
                         timeout=40*60,
                         test_class=XFSTests),
     ]
@@ -229,7 +240,7 @@ def main():
             runner.prepare_image(kernel_config, reuse=args.reuse_image) # update, build, and install the nova kernel
             for nova_config in nova_configs_to_run:
                 try:
-                    runner.create_instance(nova_config, reuse=args.reuse_image)
+                    runner.create_instance(nova_config, reuse=args.reuse_instance)
                     first_time = True
                     
                     for test_config in tests_to_run:

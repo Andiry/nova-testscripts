@@ -213,7 +213,7 @@ class Runner(object):
                     log.info("pmem devices missing...")
                     failures += 1
                 
-                if (restarts % 4) == 0 and r != 1:
+                if (restarts % 5) == 0 and r != 1:
                     log.info("Recreating instance...")
                     self.delete()
                     self.create_instance_by_name(self.instance_name)

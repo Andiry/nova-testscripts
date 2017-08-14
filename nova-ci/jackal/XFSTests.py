@@ -3,6 +3,7 @@ import re
 from JackalException import *
 import logging as log
 import DMesg
+import tempfile
 
 class XFSTests(LoggedProcess):
     def __init__(self, test_name, test_config, nova_config, kernel_config, runner):
@@ -13,7 +14,8 @@ class XFSTests(LoggedProcess):
         self.test_name = test_name
         self.junit = None
         self.runner = runner
-        self.cmd = "/usr/bin/ssh {} nova-testscripts/nova-ci/run.sh run-test xfstests {}".format(runner.get_hostname(), " ".join(self.test_config.tests)).split(" ")
+        
+        self.cmd = "/usr/bin/ssh {} nova-testscripts/nova-ci/run.sh run-test xfstests {args}".format(test_config.config)
 
 
     def compute_test_classname(self, name):
@@ -43,8 +45,8 @@ class XFSTests(LoggedProcess):
         def success(name):
             a = name.split("/")
             return """<testcase classname="{test_class}" name="{name}">
-</testcase>""".format(test_class=self.compute_test_classname(name),
-                      name=self.compute_test_name(name))
+            </testcase>""".format(test_class=self.compute_test_classname(name),
+                                  name=self.compute_test_name(name))
 
         def failure(name, kind, reason):
             a = name.split("/")

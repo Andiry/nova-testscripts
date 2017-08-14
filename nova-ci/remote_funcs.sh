@@ -36,7 +36,8 @@ function update_kernel() {
     echo repo=$repo
     echo branch=$branch
     
-    dir=$(clone_or_pull $repo) 
+    dir=$(clone_or_pull $repo)
+    echo dir=$dir
     cd $dir
     git checkout $branch
     cp ../../kernel/$config ./.config
