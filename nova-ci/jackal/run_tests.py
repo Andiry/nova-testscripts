@@ -193,17 +193,18 @@ def main():
 
     kernels_to_run = select(args.kernels,
                             universe=kernel_configs,
-                            groups={},
+                            groups=dict(none=[]),
                             default="nova-master")
 
     nova_configs_to_run = select(args.configs,
                            universe=nova_configs,
-                           groups=dict(all=[x.name for x in all_configurations]),
+                           groups=dict(all=[x.name for x in all_configurations],
+                                       none=[]),
                            default="baseline")
     
     tests_to_run = select(args.tests,
                           universe=tests,
-                          groups={},
+                          groups=dict(none=[]),
                           default="xfstests1")
 
     log.info("kernel_configs : " + " ".join([x.name for x in kernels_to_run]))
