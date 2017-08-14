@@ -18,6 +18,13 @@ class Runner(object):
         self.args = args
         self.log_out = log_out
 
+    def set_prefix(self, prefix):
+        if prefix is None:
+            self.prefix = ""
+        else:
+            self.prefix = prefix + "-"
+        log.info("Setting prefix to {}".format(self.prefix))
+
     def create_prototype_instance(self, nconf):
         pass
 
@@ -88,6 +95,9 @@ class Runner(object):
         return False
         r = self.gcloud("compute instances list")
 
+    def create_instance(self, nconf, reuse=False):
+        pass
+    
     def schedule_reboot_to_nova(self):
         self.shell_cmd("schedule_reboot_to_nova")
 
@@ -97,7 +107,7 @@ class Runner(object):
     def delete_image(self, image_name):
         log.info("Deleting {}".format(image_name))
         self.gcloud("compute images delete {name}".format(name=image_name))
-        
+
     def create_image(self, kernel_config):
 
         try:
@@ -111,29 +121,18 @@ class Runner(object):
                                 zone=self.gce_zone))
 
         self.image_desc = r[0]
+
+    def prepare_instance(self, nova_config, reboot=False):
+        log.info("prepare_instance start: {}".format(nova_config.name))
+        #self.reboot_to_nova(force=reboot)
+        self.prepare_pmem()
+        self.load_nova(nova_config)
+        self.mount_nova(nova_config)
+        log.info("prepare_instance finished: {}".format(nova_config.name))
+
         
-    def prepare_image(self, kernel_config, reboot=False, start_instance=True, reuse=False):
-        log.info("prepare_image")
-        self.instance_name = "{}{}".format(self.prefix, kernel_config.name)
-        self.image_name = "{}-image".format(self.instance_name)
-        
-        if reuse:
-            images = self.gcloud("compute images list")
-            for im in images:
-                if im["name"] == self.image_name:
-                    self.image_desc = im
-                    log.info("Reusing image {}".format(self.image_name))
-                    return
-        
-        self.create_prototype_instance(kernel_config)
-        self.update_nova_ci()
-        if not self.args.dont_build_kernel:
-            self.update_kernel(kernel_config)
-            self.build_kernel()
-            self.install_kernel()
-        self.default_to_nova()
-        self.shutdown()
-        self.create_image(kernel_config)
+    def prepare_image(self, kernel_config, reboot=False, reuse=False):
+        pass
 
     def load_nova(self, nconf):
         log.info("load_nova")
@@ -230,6 +229,7 @@ class VMRunner(Runner):
         
     def get_hostname(self):
         return self.hostname
+
     
 class GCERunner(Runner):
     def __init__(self, prompt, args, log_out, prefix=None):
@@ -247,12 +247,6 @@ class GCERunner(Runner):
         self.hosttype = "n1-highmem-8"
         self.gce_zone = "us-west1-c"
 
-    def set_prefix(self, prefix):
-        if prefix is None:
-            self.prefix = ""
-        else:
-            self.prefix = prefix + "-"
-        log.info("Setting prefix to {}".format(self.prefix))
     
     def get_hostname(self):
         return self.hostname
@@ -289,14 +283,6 @@ class GCERunner(Runner):
                 return True
         return False
 
-    def prepare_instance(self, nova_config, reboot=False):
-        log.info("prepare_instance start: {}".format(nova_config.name))
-        #self.reboot_to_nova(force=reboot)
-        self.prepare_pmem()
-        self.load_nova(nova_config)
-        self.mount_nova(nova_config)
-        log.info("prepare_instance finished: {}".format(nova_config.name))
-
     
     def create_instance(self, nconf, reuse=False):
         name = "{}-{}".format(self.image_name, nconf.name)
@@ -331,6 +317,29 @@ class GCERunner(Runner):
                          ["networkInterfaces"]
                          [0]["accessConfigs"]
                          [0]["natIP"])
+
+    def prepare_image(self, kernel_config, reboot=False, reuse=False):
+        log.info("prepare_image")
+        self.instance_name = "{}{}".format(self.prefix, kernel_config.name)
+        self.image_name = "{}-image".format(self.instance_name)
+        
+        if reuse:
+            images = self.gcloud("compute images list")
+            for im in images:
+                if im["name"] == self.image_name:
+                    self.image_desc = im
+                    log.info("Reusing image {}".format(self.image_name))
+                    return
+        
+        self.create_prototype_instance(kernel_config)
+        self.update_nova_ci()
+        if not self.args.dont_build_kernel:
+            self.update_kernel(kernel_config)
+            self.build_kernel()
+            self.install_kernel()
+        self.default_to_nova()
+        self.shutdown()
+        self.create_image(kernel_config)
 
     def create_prototype_instance(self, kernel_config):
         self.instance_name = "{}{}".format(self.prefix, kernel_config.name)

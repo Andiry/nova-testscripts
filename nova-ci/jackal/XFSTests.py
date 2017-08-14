@@ -15,7 +15,7 @@ class XFSTests(LoggedProcess):
         self.junit = None
         self.runner = runner
         
-        self.cmd = "/usr/bin/ssh {} nova-testscripts/nova-ci/run.sh run-test xfstests {args}".format(test_config.config)
+        self.cmd = "/usr/bin/ssh {host} nova-testscripts/nova-ci/run.sh run-test xfstests {args}".format(host=runner.get_hostname(), args=test_config.config).split(" ")
 
 
     def compute_test_classname(self, name):

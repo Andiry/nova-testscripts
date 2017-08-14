@@ -30,7 +30,7 @@ class Tee(object):
             i.flush()
 
 KernelConfig = collections.namedtuple("KernelConfig", "name kernel_repo kernel_config_file")
-TestConfig = collections.namedtuple("TestConfig", "name tests test_class timeout")
+TestConfig = collections.namedtuple("TestConfig", "name config test_class timeout")
 NovaConfig = collections.namedtuple("NovaConfig", "name module_args")
 
 
@@ -80,6 +80,8 @@ def main():
     
     parser.add_argument("--reuse_instance", default=False, action="store_true", help="If an existing instance exists, use it")
     parser.add_argument("--dont_reuse_instance", dest="reuse_instance", action="store_false", help="If an existing instance exists, don't use it")
+
+    parser.add_argument("--dont_reboot", action="store_false", help="Don't reboot instance after tests")
     
     parser.add_argument("--dont_build_kernel", default=False, action="store_true", help="Don't build/install the kernel")
     parser.add_argument("--dont_reset", default=False, action="store_true", help="Don't reset the host between runs")
@@ -100,7 +102,6 @@ def main():
                               # instances are out of date.
         args.reuse_instance = False
 
-    log.info(args)
     
     out = open("results/run_test.log", "w")
 
@@ -111,6 +112,7 @@ def main():
         out=Tee([sys.stdout, out])
     else:
         log.basicConfig(level=log.INFO)
+    log.info(args)
 
     if args.prompt is None:
         PROMPT = "{}@".format(pwd.getpwuid(os.getuid()).pw_name, args.host)
@@ -174,18 +176,18 @@ def main():
              TestConfig(name="xfstests-pass",
                         config="-x nova-fail",
                         timeout=40*60,
-                        test_class=XFTests),
+                        test_class=XFSTests),
              TestConfig(name="xfstests-fail",
                         config="-g nova-fail",
                         timeout=40*60,
-                        test_class=XFTests),
+                        test_class=XFSTests),
              TestConfig(name="xfstests-all",
                         config="",
                         timeout=40*60,
                         test_class=XFSTests),
     ]
 
-    if args.runner == "fixed":
+    if args.runner == "vm":
         runner = VMRunner(args.host, PROMPT, args=args, log_out=out)
     elif args.runner == "gce":
         runner = GCERunner(PROMPT, args=args, prefix=args.instance_prefix, log_out=out)
@@ -247,7 +249,7 @@ def main():
 
                         test_name = "{}/{}/{}".format(kernel_config.name, nova_config.name, test_config.name)
                                           
-                        runner.prepare_instance(nova_config, reboot=not first_time)
+                        runner.prepare_instance(nova_config, reboot=((not first_time) and not args.dont_reboot))
 
                         try:
                             dmesg = DMesg.DMesgDumper("results/{}.dmesg".format(test_name.replace("/", "_")), runner.get_hostname())
@@ -262,11 +264,12 @@ def main():
                         except JackalException as e:
                             log.error("{} failed: {}".format(test_name, e))
                         finally:
-                            test.finish()
-                            dmesg.done()
+                            #test.finish()
+                            #dmesg.done()
                             n = test_name.replace("/", "_")
                             with open("results/{}.junit".format(n), "w") as f:
-                                f.write(test.junit)
+                                pass
+                            #f.write(test.junit)
 
                 finally:
                     log.info("Cleaning up {}...".format(nova_config.name))
@@ -274,7 +277,6 @@ def main():
                         runner.shutdown()
                         runner.delete()
         finally:
-            # cleanup image creation
             pass
 
 if __name__ == "__main__":
