@@ -268,8 +268,7 @@ def main():
                             dmesg.done()
                             n = test_name.replace("/", "_")
                             with open("results/{}.junit".format(n), "w") as f:
-                                pass
-                            #f.write(test.junit)
+                                f.write(test.junit)
 
                 finally:
                     log.info("Cleaning up {}...".format(nova_config.name))
