@@ -32,7 +32,10 @@ function update_kernel() {
     shift
     branch=$1
     shift
-
+    echo config=$config
+    echo repo=$repo
+    echo branch=$branch
+    
     dir=$(clone_or_pull $repo) 
     cd $dir
     git checkout $branch
