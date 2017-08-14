@@ -11,6 +11,9 @@ case "$mode" in
     test)
 	args="-v --tests xfstests1 xfstests2 --configs baseline baseline2 --dont_kill_runner --instance_prefix jenkins-test --reuse_image"
 	shift;;
+    sweep)
+	args="--instance_prefix jenkins --reuse_image"
+	shift;;
 esac
 
 ./run_tests.py --runner gce  --dont_double_expect  $args $*
