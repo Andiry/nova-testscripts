@@ -16,6 +16,8 @@ import DMesg
 from JackalException import *
 from XFSTests import XFSTests
 from LTP import LTP
+from FSTest import FSTest
+
 from Runners import GCERunner, VMRunner
 
 out = None
@@ -193,7 +195,16 @@ def main():
              TestConfig(name="ltp",
                         config="",
                         timeout=30*60,
-                        test_class=LTP)
+                        test_class=LTP),
+
+             TestConfig(name="fstest1",
+                        config="/home/swanson/nova-testscripts/nova-ci/fstest/pjd-fstest/tests/chflags/00.t",
+                        timeout=30*60,
+                        test_class=FSTest),
+             TestConfig(name="fstest",
+                        config="",
+                        timeout=30*60,
+                        test_class=FSTest)
     ]
 
     if args.runner == "vm":
