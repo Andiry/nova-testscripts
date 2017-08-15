@@ -47,17 +47,13 @@ def get_hash(kernel_config):
     git branch --track ${branch#remotes/origin/} $branch
     done; git fetch --all""",cwd=repo_dir, shell=True)
                     
-    #subprocess.call("(cd {}; git fetch remotes/origin/{})".format(repo_dir, kernel_config.kernel_repo[1]), shell=True)
-
-    out = StringIO.StringIO()
 
     cmd = "git log {branch} -n 1 --pretty=format:%h-%H".format(branch=kernel_config.kernel_repo[1])
-    print cmd
     proc = subprocess.Popen(cmd.split(" "),
                             cwd=repo_dir,
                             stdout=subprocess.PIPE)
     (stdout, stderr) = proc.communicate()
-
+    subprocess.call("rm -rf {}".format(repo_dir))
     return stdout[:-1].split("-")
     
         
