@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -v
+
 . $NOVA_CI_HOME/test_util.sh
 
 LTP=$(clone_or_pull https://github.com/NVSL/NOVA-ltp.git)
