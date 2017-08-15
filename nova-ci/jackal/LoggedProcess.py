@@ -51,7 +51,7 @@ class LoggedProcess(object):
                 if not l:
                     break
                 self.log.write(l)
-                sys.stderr.write(".")
+                sys.stderr.write(l)
         try:
             # read everything that remains
             read_as_must_as_possible()
