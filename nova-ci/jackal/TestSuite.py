@@ -1,4 +1,4 @@
-
+import logging as log
 from LoggedProcess import LoggedProcess
 
 class TestSuite(LoggedProcess):
