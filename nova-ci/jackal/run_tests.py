@@ -53,7 +53,7 @@ def get_hash(kernel_config):
                             cwd=repo_dir,
                             stdout=subprocess.PIPE)
     (stdout, stderr) = proc.communicate()
-    subprocess.call("rm -rf {}".format(repo_dir))
+    subprocess.call("rm -rf {}".format(repo_dir).split(" "))
     return stdout[:-1].split("-")
     
         
