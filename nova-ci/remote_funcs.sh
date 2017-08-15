@@ -131,8 +131,10 @@ function list_module_args() {
 function run-test() {
     dir=$1
     shift
-    (cd $dir;
+    (set -v
+     cd $dir;
+     echo $dir
      echo ./go.sh $*
      REBUILD=yes bash ./go.sh $*
-    )
+    ) 2>&1
 }
