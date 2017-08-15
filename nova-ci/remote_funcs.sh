@@ -133,6 +133,6 @@ function run-test() {
     shift
     (cd $dir;
      echo ./go.sh $*
-     REBUILD=yes ./go.sh $*
+     REBUILD=yes bash ./go.sh $*
     )
 }
