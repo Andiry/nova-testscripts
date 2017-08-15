@@ -39,21 +39,21 @@ NovaConfig = collections.namedtuple("NovaConfig", "name module_args")
 def get_hash(kernel_config):
     repo_dir = kernel_config.kernel_repo[0].split("/")[-1][:-4]
     print repo_dir
-    if not os.path.isdir(repo_dir):
-        subprocess.call("git clone {}".format(kernel_config.kernel_repo[0]), shell=True)
+    if not os.path.isdir("/tmp/" + repo_dir):
+        subprocess.call("git clone {}".format(kernel_config.kernel_repo[0]), cwd="/tmp/", shell=True)
 
     subprocess.call("""
     for branch in `git branch -a | grep remotes | grep -v HEAD | grep -v master `; do
     git branch --track ${branch#remotes/origin/} $branch
-    done; git fetch --all""",cwd=repo_dir, shell=True)
+    done; git fetch --all""",cwd="/tmp/"+repo_dir, shell=True)
                     
 
     cmd = "git log {branch} -n 1 --pretty=format:%h-%H".format(branch=kernel_config.kernel_repo[1])
     proc = subprocess.Popen(cmd.split(" "),
-                            cwd=repo_dir,
+                            cwd="/tmp/"+repo_dir,
                             stdout=subprocess.PIPE)
     (stdout, stderr) = proc.communicate()
-    subprocess.call("rm -rf {}".format(repo_dir).split(" "))
+    #subprocess.call("rm -rf {}".format(repo_dir).split(" "))
     return stdout[:-1].split("-")
     
         

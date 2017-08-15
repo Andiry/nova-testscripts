@@ -296,7 +296,7 @@ class GCERunner(Runner):
             except JackalException as e:
                 log.error(e)
 
-            self.instance_desc = self.gcloud("compute instances create {name} --image {image} --machine-type {m_type}". # --no-address
+            self.instance_desc = self.gcloud("compute instances create {name} --image {image} --machine-type {m_type} --metadata serial-port-enable=1". # --no-address
                                              format(name=self.instance_name,
                                                     image=self.image_name,
                                                     m_type=self.hosttype))[0]
