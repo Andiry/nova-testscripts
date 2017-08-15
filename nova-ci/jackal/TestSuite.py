@@ -51,4 +51,5 @@ class TestSuite(LoggedProcess):
     def finish(self):
         LoggedProcess.finish(self)
         self.build_junit()
-        print self.junit
+        log.info(self.log.getvalue())
+        log.info(self.junit)
