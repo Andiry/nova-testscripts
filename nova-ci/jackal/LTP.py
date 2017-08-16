@@ -19,7 +19,7 @@ class LTP(TestSuite.TestSuite):
         out = []
 
         while l < max_l:
-            g = re.search("(^\S+)\s+(\d+)\s+T(PASS|FAIL)\s*:\s*(.*)", t)
+            g = re.search("(^\S+)\s+(\d+)\s+T(PASS|FAIL)\s*:\s*(.*)", lines[l])
             if g:
                 name="{}-{}".format(g.group(1), g.group(2))
                 if g.group(2) == "PASS":
