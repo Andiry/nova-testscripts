@@ -230,7 +230,7 @@ class GCERunner(Runner):
         self.image_name = None
         self.set_prefix(prefix)
             
-        self.base_image = "nova-ci-image-v9"
+        self.base_image = "nova-ci-group-v9"
         self.hosttype = "n1-highmem-8"
         self.gce_zone = "us-west1-c"
 
