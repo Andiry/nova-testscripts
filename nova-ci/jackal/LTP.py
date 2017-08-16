@@ -22,7 +22,7 @@ class LTP(TestSuite.TestSuite):
             g = re.search("(^\S+)\s+(\d+)\s+T(PASS|FAIL)\s*:\s*(.*)", lines[l])
             if g:
                 name="{}-{}".format(g.group(1), g.group(2))
-                if g.group(2) == "PASS":
+                if g.group(3) == "PASS":
                     out.append(self.success(name))
                 else:
                     out.append(self.failure(name, g.group(3), g.group(4)))
