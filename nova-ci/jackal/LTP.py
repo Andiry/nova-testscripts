@@ -19,12 +19,13 @@ class LTP(TestSuite.TestSuite):
         out = []
 
         while l < max_l:
-            g = re.search("(^.*\d+)\s+T(PASS|FAIL)(.*)", lines[l])
+            g = re.search("(^\S+)\s+(\d+)\s+T(PASS|FAIL)\s*:\s*(.*)", t)
             if g:
+                name="{}-{}".format(g.group(1), g.group(2))
                 if g.group(2) == "PASS":
-                    out.append(self.success(g.group(1)))
+                    out.append(self.success(name))
                 else:
-                    out.append(self.failure(g.group(1), g.group(2), g.group(3)))
+                    out.append(self.failure(name, g.group(3), g.group(4)))
 
             l += 1
             

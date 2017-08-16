@@ -31,6 +31,13 @@ git config --global user.email "swanson@cs.ucsd.edu"
 git config --global user.name "Steven Swanson"
 git config --global stgit.sender "Steven Swanson <swanson@cs.ucsd.edu>"
 
-To allow serial login
+To allow serial login:
 
 sudo passwd `whoami`
+
+and root login:
+
+sudo bash
+passwd
+
+or probably sudo passwd root
