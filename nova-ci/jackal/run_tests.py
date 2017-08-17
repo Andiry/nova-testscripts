@@ -19,6 +19,7 @@ from LTP import LTP
 from FSTest import FSTest
 
 from Runners import GCERunner, VMRunner
+from NOVAConfigs import KernelConfig, TestConfig, NovaConfig, build_configs
 
 out = None
 
@@ -31,10 +32,6 @@ class Tee(object):
     def flush(self):
         for i in self.files:
             i.flush()
-
-KernelConfig = collections.namedtuple("KernelConfig", "name kernel_repo kernel_config_file")
-TestConfig = collections.namedtuple("TestConfig", "name config test_class timeout")
-NovaConfig = collections.namedtuple("NovaConfig", "name module_args")
 
 def get_hash(kernel_config):
     repo_dir = kernel_config.kernel_repo[0].split("/")[-1][:-4]
@@ -121,27 +118,6 @@ def main():
     log.debug("Prompt = {}".format(PROMPT))
 
     
-    def build_configs():
-        config="""
-        data_csum={data_csum}
-        data_parity={data_parity}
-        dram_struct_csum={dram_struct_csum}
-        inplace_data_updates={inplace_data_updates}
-        metadata_csum={metadata_csum}
-        wprotect={wprotect}
-        """
-        r = []
-        for data_csum in [0,1]:
-            for data_parity in [0,1]:
-                for dram_struct_csum in [0,1]:
-                    for inplace_data_updates in [0,1]:
-                        for metadata_csum in [0,1]:
-                            for wprotect in [0,1]:
-                                r.append(NovaConfig(name="baseline-{data_csum}-{data_parity}-{dram_struct_csum}-{inplace_data_updates}-{metadata_csum}-{wprotect}".format(**locals()),
-                                                    module_args=config.format(**locals())))
-
-        return r
-
     kernel_configs = [KernelConfig("nova",
                                    kernel_repo=("https://github.com/NVSL/linux-nova.git", args.branch),
                                    kernel_config_file="gce.v4.12.config"),
