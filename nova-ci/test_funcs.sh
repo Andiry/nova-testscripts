@@ -1,15 +1,19 @@
-
 function _setup() {
     if ! [ -d "$NOVA_CI_LOG_DIR" ]; then
 	new_result_dir
     fi
     export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
-    export NOVA_CI_LOG_DIR=$PWD/results/latest
+    export NOVA_CI_LOG_DIR=$NOVA_CI_HOME/results/latest
 }
 
 function init_tests() {
-    _setup
+    if ! [ -f test_funcs.sh ]; then
+	echo You are running in the wrong directory: $PWD
+	exit 1
+    fi
+    
     export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
+    _setup
     K_SUFFIX=nova
 
     export NOVA_CI_PRIMARY_FS=/mnt/ramdisk
@@ -43,9 +47,9 @@ function new_result_dir() {
     fi
     
     export NOVA_CI_DATE=$(date +"%F-%H-%M-%S.%N")
-    R=$PWD/results/$NOVA_CI_DATE$suffix
+    R=$NOVA_CI_HOME/results/$NOVA_CI_DATE$suffix
     mkdir -p $R
-    export NOVA_CI_LOG_DIR=$PWD/results/latest
+    export NOVA_CI_LOG_DIR=$NOVA_CI_HOME/results/latest
     rm -f ${NOVA_CI_LOG_DIR}
     ln -sf $R  ${NOVA_CI_LOG_DIR}  
 }
@@ -156,8 +160,6 @@ function reboot_to_nova() {
 
 
 function build_module() {
-    init_tests
-    pushd $NOVA_CI_HOME
     path=$1
     shift
     dest=$1
@@ -165,15 +167,15 @@ function build_module() {
     files=$@
     V=0
     (set -v;
-	cd linux-nova;
-	make V=$V LOCALVERSION=-${K_SUFFIX} prepare 
-	make V=$V  LOCALVERSION=-${K_SUFFIX} modules_prepare 
-	make V=$V  SUBDIRS=scripts/mod LOCALVERSION=-${K_SUFFIX}
-	make V=$V  -j$[$(count_cpus) + 1] SUBDIRS=$path LOCALVERSION=-${K_SUFFIX}
-	sudo cp $files /lib/modules/${KERNEL_VERSION}/kernel/$dest
-	sudo depmod
-	) 2>&1 |tee $R/module_build.log
-    popd
+#     init_tests
+     cd $NOVA_CI_HOME/linux-nova
+     make V=$V LOCALVERSION=-${K_SUFFIX} prepare 
+     make V=$V  LOCALVERSION=-${K_SUFFIX} modules_prepare 
+     make V=$V  SUBDIRS=scripts/mod LOCALVERSION=-${K_SUFFIX}
+     make V=$V  -j$[$(count_cpus) + 1] SUBDIRS=$path LOCALVERSION=-${K_SUFFIX}
+     sudo cp $files /lib/modules/${KERNEL_VERSION}/kernel/$dest
+     sudo depmod
+    ) 2>&1 |tee $R/module_build.log
 
 }
 
@@ -410,14 +412,15 @@ function _do_run_tests() {
 	     umount_nova
 	     #stop_dmesg_record
 	    ) 2>&1 | tee ${NOVA_CI_LOG_DIR}/$i.log
+	    echo NOVA_CI_LOG: [${NOVA_CI_LOG_DIR}/$i.log]
 	done
     ) 2>&1 | tee  $NOVA_CI_LOG_DIR/run_test.log
-    
+
 }
 
 function do_run_tests() {
     new_result_dir
-    
+    echo "====================================" $NOVA_CI_LOG_DIR
     if [ ".$1" = "." ]; then
 	targets=$(cat ${NOVA_CI_HOME}/tests_to_run.txt)
     else
@@ -475,7 +478,7 @@ function lgrep() {
     )
 }
 
-function auto_checkpatch {
+function auto_checkpatch() {
     ../../scripts/checkpatch.pl -f $1 --fix
     diff $1 $1.EXPERIMENTAL-checkpatch-fixes | less
     echo ok?
