@@ -85,6 +85,8 @@ def main():
     parser.add_argument("--dont_kill_runner", default=False, action="store_true", help="Don't kill the runner when finished")
     parser.add_argument("--collect_dmesg", default=False, action="store_true", help="Collect output from dmesg")
 
+    parser.add_argument("--commit_spec", default="devel", help="Which tag/commit of nova to build")
+
     args = parser.parse_args()
 
     if not os.path.isdir("./results"):
@@ -126,6 +128,9 @@ def main():
                                    kernel_config_file="gce.v4.12.config"),
                       KernelConfig("nova-devel",
                                    kernel_repo=("https://github.com/NVSL/linux-nova.git", "devel"),
+                                   kernel_config_file="gce.v4.12.config"),
+                      KernelConfig("commit",
+                                   kernel_repo=("https://github.com/NVSL/linux-nova.git", args.commit_spec),
                                    kernel_config_file="gce.v4.12.config")]
 
     all_configurations = build_configs()
