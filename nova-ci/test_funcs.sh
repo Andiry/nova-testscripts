@@ -478,3 +478,17 @@ function auto_checkpatch() {
     fi
 }
 
+function test_branch() {
+    local branch=$1
+    (
+	set -e
+	cd $NOVA_CI_HOME/linux-nova;
+	git push --set-upstream origin $branch
+	label=$branch-$(git log ${branch} -n 1 --pretty=format:%h)-$USER
+	urls=$(for job in NOVA-build-one-off XFSTests-pass-one-off LTP-one-off; do
+		   echo "http://35.199.145.104:8080/job/$job/buildWithParameters?token=aoeu&MY_GIT_TAG=$branch&RUN_LABEL=$label"
+	       done)
+	curl --user swanson $urls
+    )
+    
+}
