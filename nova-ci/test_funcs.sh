@@ -9,7 +9,7 @@ function _setup() {
 function init_tests() {
     if ! [ -f test_funcs.sh ]; then
 	echo You are running in the wrong directory: $PWD
-	exit 1
+	return
     fi
     
     export NOVA_CI_HOME=$HOME/nova-testscripts/nova-ci/
@@ -303,7 +303,7 @@ function mount_nova() {
 
     umount_nova
     
-    reload_nova
+    reload_nova $1
 
     mount_one $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
     mount_one $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
@@ -326,29 +326,19 @@ function remount_nova() {
 }
 
 function reload_nova() {
-    
-    # local metadata_strong="replica_metadata=1 metadata_csum=1"
-    # local metadata_weak="replica_metadata=0 metadata_csum=0"
 
-    # local data_strong="data_csum=1 data_parity=1"
-    # local data_weak="data_csum=1 data_parity=1"
-
-    # local relaxed_data="inplace_data_updates=1"
-    # local strict_data="inplace_data_updates=0"
-
-    # local relaxed_metadata="unsafe_metadata=1"
-    # local strict_metadata="unsafe_metadata=0"
-
-    # local write_protect="wprotect=1"
-    # local write_unprotect="wprotect=0"
-
-    
+    if [ ".$1" != "." ]; then
+	args=$(python $NOVA_CI_HOME/jackal/NOVAConfigs.py $1)
+    else
+	args=
+    fi
+    echo $args
     sudo modprobe libcrc32c
     sudo rmmod nova
 
+    sudo modprobe nova $args  #nova_dbgmask=0xfffffff
 
-    sudo modprobe nova $1 #nova_dbgmask=0xfffffff
-
+    list_module_args nova
     
     sleep 1
 
