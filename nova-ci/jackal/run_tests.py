@@ -42,7 +42,7 @@ def get_hash(kernel_config):
     subprocess.call("""
     for branch in `git branch -a | grep remotes | grep -v HEAD | grep -v master `; do
     git branch --track ${branch#remotes/origin/} $branch
-    done; git fetch --all""",cwd="/tmp/"+repo_dir, shell=True)
+    done; git pull --all""",cwd="/tmp/"+repo_dir, shell=True)
                     
 
     cmd = "git log {branch} -n 1 --pretty=format:%h-%H".format(branch=kernel_config.kernel_repo[1])
