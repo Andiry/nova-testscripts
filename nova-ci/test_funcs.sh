@@ -107,7 +107,13 @@ function get_host_type() {
 
 function compute_grub_default() {
     init_tests
-    menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $KERNEL_VERSION| grep -v recovery |grep -v  upstart | cut -f 1 -d :)
+    if [ ".$1" = "." ]; then
+	V=$KERNEL_VERSION
+    else
+	V=$1
+    fi
+    
+    menu=$(grep 'menuentry ' /boot/grub/grub.cfg  | grep -n $V| grep -v recovery |grep -v  upstart | cut -f 1 -d :)
     menu=$[menu-2]
     echo "1>$menu"
 }
@@ -153,8 +159,8 @@ function install_kernel() {
 }
 
 function reboot_to_nova() {
-    echo Rebooting to $(compute_grub_default)...
-    sudo grub-reboot $(compute_grub_default)
+    echo Rebooting to $(compute_grub_default $1)...
+    sudo grub-reboot $(compute_grub_default $1)
     sudo systemctl reboot -i
 }
 
@@ -303,7 +309,7 @@ function mount_nova() {
 
     umount_nova
     
-    reload_nova $1
+    reload_nova 
 
     mount_one $NOVA_CI_PRIMARY_DEV $NOVA_CI_PRIMARY_FS
     mount_one $NOVA_CI_SECONDARY_DEV $NOVA_CI_SECONDARY_FS
@@ -327,11 +333,8 @@ function remount_nova() {
 
 function reload_nova() {
 
-    if [ ".$1" != "." ]; then
-	args=$(python $NOVA_CI_HOME/jackal/NOVAConfigs.py $1)
-    else
-	args=
-    fi
+    args=$(python $NOVA_CI_HOME/jackal/NOVAConfigs.py $NOVA_MOUNT_OPTIONS)
+
     echo $args
     sudo modprobe libcrc32c
     sudo rmmod nova
@@ -397,7 +400,7 @@ function _do_run_tests() {
 	    (cd $i;
 	     bug_report
 	    # start_dmesg_record  ${NOVA_CI_LOG_DIR}/$i.dmesg
-	     mount_nova
+	     mount_nova 
 	     bash -v ./go.sh $*
 	     umount_nova
 	     #stop_dmesg_record
