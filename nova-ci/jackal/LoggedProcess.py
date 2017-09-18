@@ -38,7 +38,7 @@ class LoggedProcess(object):
 
         self.start = time.clock()
 
-    def step(self):
+    def step(self): #  this code seems not to work right.  If the test hangs, we don't timeout.  Not sur ehow to debug it.
         if self.ready_to_finish:
             return False
         
@@ -56,7 +56,8 @@ class LoggedProcess(object):
             # read everything that remains
             read_as_must_as_possible()
         except IOError as e:  # when there's nothing to read, we'll get an exception
-            time.sleep(0.1)
+            sys.stderr.write("IOE ")
+            time.sleep(1)
         finally:
             if self.proc.poll() is not None: # if the process is dead, there's
                                              # nothing much more coming
