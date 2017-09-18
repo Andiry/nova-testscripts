@@ -39,12 +39,12 @@ class LoggedProcess(object):
         self.start = time.clock()
 
     def step(self): #  this code seems not to work right.  If the test hangs, we don't timeout.  Not sur ehow to debug it.
-        if self.ready_to_finish:
-            return False
-        
         if self.timeout is not None and time.clock() > self.start + self.timeout:
             raise TimeoutException()
 
+        if self.ready_to_finish:
+            return False
+        
         def read_as_must_as_possible():
             while True:
                 l = self.proc.stdout.read(1024)
