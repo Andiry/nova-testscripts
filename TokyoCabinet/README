@@ -4,6 +4,9 @@ Install:
 # apt-get install libtokyocabinet-dev
 # make
 
+Optimized version:
+NVSL/tokyocabinet
+
 Usage:
 # cp tokyo_cabinet_set /mnt/ramdisk/
 # cd /mnt/ramdisk
