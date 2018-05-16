@@ -1,0 +1,12 @@
+LMDB: Lightning Memory-mapped DataBase.
+
+Git repos:
+NVSL/LMDB
+NVSL/LMDB-test
+
+First install LMDB, then make LMDB-test/db_bench_mdb.
+
+Usage:
+# ./lmdb-sequential-write
+
+
