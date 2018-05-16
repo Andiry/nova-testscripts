@@ -1,0 +1,9 @@
+Git repos:
+NVSL/Redis-NVM
+
+Follow the README, setup redis.conf accordingly.
+
+Usage:
+# ./redis_benchmark -t mset -n 1000000
+
+
