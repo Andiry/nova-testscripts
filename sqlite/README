@@ -1,0 +1,14 @@
+SQLite is a light-weight DBMS.
+
+Git repos:
+NVSL/SQLite
+NVSL/Mobibench
+
+The SQLite repo contains the source code. Mobibench repo includes the benchmark
+and the sqlite source (embedded). If you just want to test, Mobibench alone is enough.
+
+Usage:
+# ./mobibench -h	// man page
+# ./mobibench -p /mnt/ramdisk/ -d 0 -n 1000000 -j 3 -t 16	// test
+
+
